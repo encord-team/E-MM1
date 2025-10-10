@@ -35,15 +35,19 @@ r1_pairs["file_path"] = os.getenv("ROOT_DATA_PATH") / r1_pairs["file_name"]
 
 ## What's Coming?
 
+- [ ] We will publish pre-computed embeddings used to build the 100M dataset as described in Section 3.1.1 in [the paper][paper].
 - [ ] We will publish a model with weights that was trained on the dataset. The model can embed all five modalities into a unified embedding space.
 
 # TODO
+
+% REMOVE ME BEFORE PUBLISH
 
 - [ ] Add `filename` to infors csv.
 - [ ] Split 100M into 16 shards.
 - [ ] Put files on LFS when finalized
 - [ ] Felix find Start+End time for VidGen
 - [ ] Prose
+
   - [ ] Dataset attribution
   - [ ] Download instructions
   - [ ] Main README describe how to use the csv files:
@@ -52,7 +56,9 @@ r1_pairs["file_path"] = os.getenv("ROOT_DATA_PATH") / r1_pairs["file_name"]
   - [ ] Add contact info (ml@encord.com) or whatever
   - [ ] Banner?
   - [ ] Main README polish
+
 - [ ] Eval code for EShot
 - [ ] At the end, clean up, squash, force push.
 
+[paper]: ./supplementary/technical_report.pdf
 [download]: ./DOWNLOAD.md
