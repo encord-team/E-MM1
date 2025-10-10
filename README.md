@@ -40,24 +40,27 @@ r1_pairs["file_path"] = os.getenv("ROOT_DATA_PATH") / r1_pairs["file_name"]
 
 # TODO
 
-% REMOVE ME BEFORE PUBLISH
+% REMOVE TODO section BEFORE PUBLISH
+
+### Felix currently working on
 
 - [ ] Add `filename` to infors csv.
+- [ ] Felix find Start+End time for VidGen
 - [ ] Split 100M into 16 shards.
 - [ ] Put files on LFS when finalized
-- [ ] Felix find Start+End time for VidGen
-- [ ] Prose
+- [ ] Eval code for EShot
 
+### Other stuff that needs to happen
+
+- [ ] Prose
   - [ ] Dataset attribution
   - [ ] Download instructions
   - [ ] Main README describe how to use the csv files:
     - lfs usage
     - join tables to get info you need. Make many use-cases
   - [ ] Add contact info (ml@encord.com) or whatever
-  - [ ] Banner?
+  - [Mavis] Banner?
   - [ ] Main README polish
-
-- [ ] Eval code for EShot
 - [ ] At the end, clean up, squash, force push.
 
 [paper]: ./supplementary/technical_report.pdf
