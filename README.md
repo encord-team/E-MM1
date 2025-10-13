@@ -1,6 +1,4 @@
-# E-MM1: The Worlds Largest Multimodal Dataset
-
-> LAUNCH: Oct. 15th.
+[![E-MM1: The Worlds Largest Multimodal Dataset](./supplementary/banner.png)](https://data.encord.com/e-mm1/explorer)
 
 With the E-MM1 dataset, we contribute >100M connections between data from five different modalities; Images, Videos, Audio, Point Clouds, Captions.
 
