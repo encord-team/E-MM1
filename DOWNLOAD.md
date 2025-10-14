@@ -1,39 +1,9 @@
-# Downloading Data
-
-This document describes how to download the raw underlying files.
-
-## Setup
-
-Every data item has its own index. If we instruct everyone to use the `infos` dataframes
-and that forces a particular structure on how it's downloaded / named, then the
-loading / "predicting paths" should be easy.
-
-## Install dependencies
-
-```
-export ROOT_DATA_PATH=/path/to/ml-data/data
-
-img2dataset
-yt-dlp
-datasets (from transformers)
-```
-
-Instructions on how to install + ref to the original docs.
-
-## Video
-
-## Image
-
-## Audio & Video
-
-## Captions?
-
-Description of where to find them and how to figure out where they came from.
 # Data Download Guide
 This guide provides code to download all raw data files from the various source datasets used in this project. The download scripts utilize the metadata in the infos dataframes 
 (located at `/encord_phase_1_dataset/infos/` and `/encord_phase_2_dataset/infos/`) to automatically organize files into the appropriate directory structure.
 Repository Structure
 All downloaded files are organized into the following structure under your ROOT_DATA_PATH:
+
 ```
 ROOT_FOLDER/
 ├── phase_1_only/
@@ -49,10 +19,29 @@ ROOT_FOLDER/
     ├── video/
     └── points/
 ```
+
 phase_1_only: Contains files exclusive to Phase 1
 phase_2_only: Contains files exclusive to Phase 2
 shared: Contains files that appear in both Phase 1 and Phase 2
 The download scripts read the save_folder and file_name columns from each info dataframe to place files in the correct locations automatically. For each code chunk you need to set the ROOT_DATA_PATH and the path to your chosen infos dataframe you want to extract data from. 
+
+## Infos DataFrame Schema
+Each modality (video, audio, image, points, text) has an associated `infos` dataframe that contains metadata for downloading and organizing the raw data files. All dataframes share a common schema structure with modality-specific columns for file retrieval.
+
+All dataframes have these columns:
+
+`encord_{modality}_id | source_dataset | dataset_license | [modality_specific_columns] | file_name | save_folder`
+
+### Universal Columns (All Modalities)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `encord_{modality}_id` | Integer | Unique identifier for the data item within the Encord system (e.g., `encord_video_id`, `encord_image_id`) |
+| `source_dataset` | String | Name of the original dataset from which this data item was sourced (e.g., "Valor", "COCO", "AudioSet") |
+| `dataset_license` | String | License type of the source dataset (e.g., "MIT", "CC-BY", "Apache-2.0") |
+| `file_name` | String | Name of the file to be saved locally (e.g., `4Df6eeR64Ow_14.mp4`) |
+| `save_folder` | String | Target directory for organizing files. One of: `phase_1_only`, `phase_2_only`, or `shared` |
+
 
 ### Note on audio: 
 All audio files are stored as .mp4 video files (located in the video/ directories) due to significant overlap between video and audio datasets. The scripts will handle this automatically based on the save_folder column in your dataframes.
@@ -135,7 +124,8 @@ for row in df.iter_rows(named=True):
     except Exception as e:
         logger.error(f"Unexpected error downloading {row['file_name']}: {e}")
 ```
-VidGen-1M Videos
+## VidGen-1M Videos
+
 For VidGen-1M videos start/end times are not provided. But you can download the dataset directly from HuggingFace and extract the relevant file_id entries:
 HuggingFace Dataset: `Fudan-FUXI/VIDGEN-1M`
 Filter your dataframe for VidGen-1M entries and use the file_id column to locate the corresponding video files in the downloaded dataset. Match the file_id from your dataframe to the files in the VidGen-1M dataset structure, then copy them to your ROOT_DATA_PATH/save_folder/file_name locations.
@@ -242,9 +232,11 @@ def download_vidgen_videos():
 ```
 
 # Image
+
 For image we need to treat each dataset differently
 
 ## COCO
+
 All images are from the COCO2017 Train subset: https://cocodataset.org/#home
 ```python
 import polars as pl
@@ -338,6 +330,7 @@ def download_coco(df):
     shutil.rmtree(extract_folder)
 ```
 ## ImageNet
+
 All images can be downloaded from huggingface: https://huggingface.co/datasets/ILSVRC/imagenet-1k/
 ```python
 import polars as pl
@@ -426,6 +419,7 @@ def download_imagenet(df):
         print(f"Found and saved {found_count}/{len(needed_file_ids)} images")
 ```
 ## Flickr30k
+
 All images can be downloaded from huggingface: https://huggingface.co/datasets/nlphuji/flickr30k
 ```python 
 import polars as pl
