@@ -53,19 +53,13 @@ All audio files are stored as .mp4 video files (located in the video/ directorie
 
 ## Install dependencies
 
+We use [uv](https://docs.astral.sh/uv/) to setup an environment for downloading the data.
 ```
 export ROOT_DATA_PATH=/path/to/ml-data/data
-
-img2dataset
-yt-dlp
-huggingface_hub
-polars
+uv sync
 ```
 
-Instructions on how to install + ref to the original docs.
-
 # Video & Audio
-
 
 ## YouTube-based Datasets
 
