@@ -88,49 +88,54 @@ import polars as pl
 
 ROOT_DATA_PATH = os.getenv("ROOT_DATA_PATH")
 
-CHOSEN_MODALITIES = ["image", "audio", "video", "points"]
+CHOSEN_MODALIIES = ["image", "audio", "video", "points"]
 
-nn1_groups = pl.read_csv("data/encord_phase_1_dataset/nn_1/data_groups.csv")
-image_info = pl.read_csv("data/encord_phase_1_dataset/infos/image.csv")
-audio_info = pl.read_csv("data/encord_phase_1_dataset/infos/audio.csv")
-video_info = pl.read_csv("data/encord_phase_1_dataset/infos/video.csv")
-points_info = pl.read_csv("data/encord_phase_1_dataset/infos/points.csv")
-text_info = pl.read_csv("data/encord_phase_1_dataset/infos/text.csv")
-
-modality_to_info = {
-    "image": image_info,
-    "audio": audio_info,
-    "video": video_info,
-    "points": points_info,
-    "text": text_info 
-}
-
-ROOT_DATA_PATH = Path("your/root/path")
 SEP = str(Path("/"))  
 
-for modality in CHOSEN_MODALITIES:
+nn1_groups = pl.read_csv(Path(ROOT_DATA_PATH)/ "encord_phase_1_dataset" / "nn_1" / "data_groups.csv")
+image_info = pl.read_csv(Path(ROOT_DATA_PATH)/ "encord_phase_1_dataset" / "infos" / "image.csv")
+audio_info = pl.read_csv(Path(ROOT_DATA_PATH)/ "encord_phase_1_dataset" / "infos" / "audio.csv")
+video_info = pl.read_csv(Path(ROOT_DATA_PATH)/ "encord_phase_1_dataset" / "infos" / "video.csv")
+points_info = pl.read_csv(Path(ROOT_DATA_PATH)/ "encord_phase_1_dataset" / "infos" / "points.csv")
+text_info = pl.read_csv(Path(ROOT_DATA_PATH)/ "encord_phase_1_dataset" / "infos" / "text.csv")
+
+modality_to_info = {
+  "image" : image_info,
+  "audio" : audio_info,
+  "video" : video_info,
+  "points" : points_info,
+  "text" : text_info 
+}
+
+for modality in CHOSEN_MODALIIES:
+    
     info_df = modality_to_info[modality] 
     info_df = info_df.with_columns(
-        # Here we use the file_structure as in DOWNLOAD.md
         (
             pl.lit(str(ROOT_DATA_PATH)) + SEP + 
-            pl.col('save_folder') + SEP + 
+            pl.col("save_folder") + SEP + 
             pl.lit(modality) + SEP + 
-            pl.col('file_name')
-        ).alias('file_path')
+            pl.col("file_name")
+        ).alias(f"{modality}_file_path")
     )
-    join_col = f'encord_{modality}_index'
+    join_col = f"encord_{modality}_id"
 
-    nn1_groups = nn1_groups.join(info_df.select([
+    nn1_groups = nn1_groups.join(info_df.select(
+      [
         join_col,
-        'file_path'
-    ]), on=join_col, how='left')
-
-nn1_groups = nn1_groups.join(text_info.select([
-    'encord_text_id',
-    'caption'
-]), on='encord_text_id', how='left')
-
+        f"{modality}_file_path"
+      ]),
+      on = join_col,
+      how = "left"
+    )
+nn1_groups = nn1_groups.join(text_info.select(
+  [
+    "encord_text_id",
+    "caption",
+  ]),
+  on="encord_text_id",
+  how="left"
+)
 ```
 
 ## Working with the Encord Phase 2 (1M Human Annotated) Dataset
@@ -185,44 +190,45 @@ encord_phase_2_dataset/
 
 ### Example: Extracting all Point-Cloud <> Audio groups from Phase 2
 
+**Simply change the `MODALITIES` variable to specify which modality pairs you want to extract, e.g., `['points','audio','video']` will extract all points-audio and points-video pairs that exist in the dataset. Note that only modality pairs present in the dataset will be extracted. For example as there are no audio-video pairs in the dataset, that combination will be automatically skipped.**
 ```python
-# Prerequisites: 
-# - Set ROOT_DATA_PATH environment variable
-
-import polars as pl
+import polars as pl 
 import os 
-from itertools import permutations
 from pathlib import Path
+from itertools import permutations
 
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
-
 MODALITIES = ['points','audio']
+SEP = str(Path("/"))  
 
-triplets_df = pl.read_csv('data/encord_phase_2_dataset/triplets.csv')
+triplets_df = pl.read_csv(Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "triplets.csv" )
 
 modality_to_path = {
-    'image': 'data/encord_phase_2_dataset/infos/image.csv',
-    'audio': 'data/encord_phase_2_dataset/infos/audio.csv',
-    'video': 'data/encord_phase_2_dataset/infos/video.csv',
-    'points': 'data/encord_phase_2_dataset/infos/points.csv'
+                      'image' : Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "image.csv",
+                      'audio' : Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "audio.csv",
+                      'video' : Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "video.csv",
+                      'points' : Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "points.csv"
 }
 
 modality_to_info = {}
 
 for modality in MODALITIES:
-    info_df = pl.read_csv(modality_to_path[modality])
-    # Add file path construction
-    info_df = info_df.with_columns(
-        (
-            pl.lit(str(ROOT_DATA_PATH)) + "/" + 
-            pl.col('save_folder') + "/" + 
-            pl.lit(modality) + "/" + 
-            pl.col('file_name')
-        ).alias('file_path')
-    )
-    modality_to_info[modality] = info_df
+  modality_to_info[modality] = (
+                                pl.read_csv(modality_to_path[modality])
+                                .with_columns(
+                                  (
+                                    pl.lit(str(ROOT_DATA_PATH)) + SEP + 
+                                    pl.col('save_folder') + SEP + 
+                                    pl.lit(modality) + SEP + 
+                                    pl.col('file_name')
+                                    )
+                                    .alias(f'{modality}_file_path')
+                                  )
+                                )
+            
 
 modality_pairs = list(permutations(MODALITIES, 2))
+
 
 processed_triplets = []
 for mod1, mod2 in modality_pairs:
@@ -231,30 +237,29 @@ for mod1, mod2 in modality_pairs:
     mod_1_mod_2_triplets = triplets_df.filter(pair_condition)
 
     if mod_1_mod_2_triplets.height == 0:
-        continue
+      continue
 
     mod_1_info = modality_to_info[mod1].select([
-        f'encord_{mod1}_id',
-        'file_path'
-    ]).rename({"file_path": "modality_1_file_path"})
-    
+      f'encord_{mod1}_id',
+      f'{mod1}_file_path'
+      ]
+      ).rename({f'{mod1}_file_path':"modality_1_file_path"})
     mod_2_info = modality_to_info[mod2].select([
-        f'encord_{mod2}_id',
-        'file_path'
-    ]).rename({"file_path": "modality_2_file_path"})
-    
-    mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(mod_1_info, on=f'encord_{mod1}_id', how='left')
-    mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(mod_2_info, on=f'encord_{mod2}_id', how='left')
+      f'encord_{mod2}_id',
+      f'{mod2}_file_path'
+      ]
+      ).rename({f'{mod2}_file_path':"modality_2_file_path"})
+    mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(mod_1_info,left_on=f'encord_modality_1_id',right_on = f'encord_{mod1}_id',how='left')
+    mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(mod_2_info,left_on=f'encord_modality_2_id',right_on = f'encord_{mod2}_id',how='left')
 
     processed_triplets.append(mod_1_mod_2_triplets)
 
 output_triplets = pl.concat(processed_triplets)
 
-# optional : get captions
-text_info = pl.read_csv('data/encord_phase_2_dataset/infos/text.csv')
+# optional : get captions
+text_info = pl.read_csv(Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "text.csv")
 text_info = text_info.select(['encord_text_id','caption'])
-output_triplets = output_triplets.join(text_info, on='encord_text_id', how='left')
-
+output_triplets = output_triplets.join(text_info,on='encord_text_id',how='left')
 ```
 
 
@@ -325,9 +330,8 @@ Maps categories to audio samples.
 
 Each of the 112 categories maps to a list of eshot_audio_id values. This determines the class of each audio file
 
-#### category_to_point_ids.json
+category_to_point_ids.json
 Maps categories to point cloud samples.
-
 **Schema**: `dict[str, list[int]]`
 
 
@@ -343,18 +347,127 @@ Each of the 112 categories maps to a list of eshot_point_id values. This determi
 
 **Zero-shot classification** using embedding models:
 
-1. Embed all samples in both modalities using your model
-2. For each category, create a **class vector** from the opposing modality:
-   - Compute mean of all embeddings in that category
-   - Normalize to unit length
-3. Classify test samples by nearest class vector
+1. [ ] Embed all samples in both modalities using your model
+2. [ ] For each category, create a **class vector** from the opposing modality:
+   - [ ] Compute mean of all embeddings in that category
+   - [ ] Normalize to unit length
+3. [ ] Classify test samples by nearest class vector
 
 
 #### Example 
 
 
 ```python
-felix write example code here
+import polars as pl
+import numpy as np
+import json 
+from pathlib import Path
+
+ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
+
+
+
+def make_class_embedding(x : np.ndarray):
+  """
+  Accepts as input NxD array where N is number of items in class and D is dimension of embeddings
+  """
+  x = x.mean(axis=0)
+  x = x / np.linalg.norm(x)
+  return x
+
+audio_info = pl.read_csv('data/eshot/eshot_audio_info.csv')
+points_info = pl.read_csv('data/eshot/eshot_audio_info.csv')
+
+with open('data/eshot/category_to_point_ids.json','r') as f:
+  category_to_point_ids = json.load(f) 
+
+with open('data/eshot/category_to_audio_ids.json','r') as f:
+  category_to_audio_ids = json.load(f) 
+
+
+
+audio_file_paths = [Path(ROOT_DATA_PATH,'eshot','audio',file_name) for file_name in audio_info['file_name']]
+
+audio_id_to_index = {audio_id : idx for idx,audio_id in enumerate(audio_info['eshot_audio_id'])}
+
+points_file_paths = [Path(ROOT_DATA_PATH,'eshot','audio',file_name) for file_name in points_info['file_name']]
+
+point_id_to_index = {point_id : idx for idx,point_id in enumerate(points_info['eshot_point_id'])}
+
+
+audio_embeddings = YOUR_MODEL(audio_file_paths) # ensure this outputs embedding matrix in same order as file paths input list
+points_embeddings = YOUR_MODEL(points_file_paths) # ensure this outputs embedding matrix in same order as file paths input list
+
+audio_class_vectors = {}
+category_to_audio_embeddings  = {}
+category_to_point_embeddings = {}
+points_class_vectors = {}
+
+for category,audio_ids in category_to_audio_ids.items():
+
+  audio_cat_idxs = [audio_id_to_index[audio_id] for audio_id in audio_ids]
+
+  audio_cat_embs = audio_embeddings[audio_cat_idxs]
+  category_to_audio_embeddings[category] = audio_cat_embs
+
+  audio_cat_vector = make_class_embedding(audio_cat_embs)
+
+  audio_class_vectors[category] = audio_cat_vector
+
+
+
+for category,point_ids in category_to_point_ids.items():
+
+  point_cat_idxs = [point_id_to_index[point_id] for point_id in point_ids]
+
+  point_cat_embs = points_embeddings[point_cat_idxs]
+  category_to_point_embeddings[category] = point_cat_embs
+
+  point_cat_vector = make_class_embedding(point_cat_embs)
+
+
+  points_class_vectors[category] = point_cat_vector
+  
+
+sorted_categories = sorted(category_to_audio_ids.keys())
+
+audio_class_embs = np.stack([audio_class_vectors[cat] for cat in sorted_categories])
+point_class_embs = np.stack([points_class_vectors[cat] for cat in sorted_categories])
+
+# audio to points
+for i, category in enumerate(sorted_categories): 
+    print(f"\n{'='*60}")
+    print(f"Category: {category}")
+    print(f"{'='*60}")
+    audio_embs = category_to_audio_embeddings[category]
+    audio_embs = audio_embs / np.linalg.norm(audio_embs, axis=1, keepdims=True)
+    sim_mat = audio_embs @ point_class_embs.T
+    
+    classifications = np.argsort(sim_mat, axis=1)[:, ::-1]  
+
+    print("\n[Audio → Points Classification]")
+    for k in [1, 5]:
+
+        top_k_predictions = classifications[:, :k]
+        correct = np.any(top_k_predictions == i, axis=1)  
+        accuracy = np.mean(correct)
+        print(f"  Top-{k} Accuracy: {accuracy:.4f} ({int(correct.sum())}/{len(correct)} correct)")
+
+    
+
+    point_embs = category_to_point_embeddings[category]
+    point_embs = point_embs / np.linalg.norm(point_embs,axis=1,keepdims=True)
+    sim_mat = point_embs @ audio_class_embs.T
+    
+    classifications = np.argsort(sim_mat,axis=1)[:,::-1]
+    
+    print("\n[Points → Audio Classification]")
+    for k in [1, 5]:
+
+        top_k_predictions = classifications[:, :k]
+        correct = np.any(top_k_predictions == i, axis=1)  
+        accuracy = np.mean(correct)
+        print(f"  Top-{k} Accuracy: {accuracy:.4f} ({int(correct.sum())}/{len(correct)} correct)")
 ```
 
 
@@ -373,18 +486,18 @@ felix write example code here
 
 ### Felix currently working on
 
-- [-] Add `filename` to infors csv.
-- [-] Felix find Start+End time for VidGen
-- [-] Split 100M into 16 shards.
-- [ ] Put files on LFS when finalized
-- [ ] Eval data / code for EShot
+- [x] Add `filename` to infors csv.
+- [x] Felix find Start+End time for VidGen
+- [x] Split 100M into 16 shards.
+- [x] Put files on LFS when finalized
+- [x] Eval code for EShot
 
 ### Other stuff that needs to happen
 
 - [ ] Prose
-  - [-] Dataset attribution
-  - [-] Download instructions. Needs fixing + testing
-  - [ ] Main README describe how to use the csv files:
+  - [x] Dataset attribution
+  - [x] Download instructions
+  - [x] Main README describe how to use the csv files:
     - lfs usage
     - join tables to get info you need. Make many use-cases
   - [ ] Add contact info (ml@encord.com) or whatever
