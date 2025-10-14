@@ -33,7 +33,7 @@ Each modality (video, audio, image, points, text) has an associated `infos` data
 
 All dataframes have these columns:
 
-`encord_{modality}_id | source_dataset | dataset_license | [modality_specific_columns] | file_name | save_folder`
+`encord_{modality}_id` | `source_dataset` | `dataset_license` | `[modality_specific_columns]` | `file_name` | `save_folder`
 
 ### Universal Columns (All Modalities)
 
@@ -61,7 +61,7 @@ uv sync
 
 # Video & Audio
 
-## YouTube-based Datasets
+## YouTube-based Datasets
 
 
 Download videos or audio from YouTube using yt-dlp with time-based segmentation:
@@ -129,7 +129,7 @@ for row in df.iter_rows(named=True):
         logger.error(f"Unexpected error downloading {row['file_name']}: {e}")
 ```
 
-## VidGen-1M Videos
+## VidGen-1M Videos
 
 
 
@@ -243,7 +243,7 @@ if __name__ == "__main__":
 For image we need to treat each dataset differently
 
 
-## COCO
+## COCO
 
 
 All images are from the COCO2017 Train subset: https://cocodataset.org/#home
@@ -434,7 +434,7 @@ def download_imagenet(df):
         print(f"Found and saved {found_count}/{len(needed_file_ids)} images")
 ```
 
-## Flickr30k
+## Flickr30k
 
 
 
