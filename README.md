@@ -13,14 +13,15 @@ With the E-MM1 dataset, we contribute >100M groups of data (`E-MM1:100M`) from f
 - [Working with the `E-MM1:1M` split](#working-with-the-e-mm11m-split)
   - [`E-MM1:1M` file Layout](#e-mm11m-file-layout)
   - [`E-MM1:1M` column schema](#e-mm11m-column-schema)
-  - [Example: Extracting all point cloud - audio groups](#example-extracting-all-point-cloud--audio-groups-from-e-mm11m)
-- [EShot: A Zero-Shot Benchmark for Audio ↔ Point Cloud](#eshot-a-zero-shot-benchmark-for-audio--point-cloud)
+  - [Example: Extracting all Point-Cloud ↔ Audio groups from `E-MM1:1M`](#example-extracting-all-point-cloud--audio-groups-from-e-mm11m)
+- [`EShot`: A Zero-Shot Benchmark for Audio ↔ Point Cloud](#eshot-a-zero-shot-benchmark-for-audio--point-cloud)
   - [Directory Structure](#directory-structure)
   - [File Descriptions](#file-descriptions)
   - [Evaluation Protocol](#evaluation-protocol)
-   - [Example](#example)
+  - [Example](#example)
 - [Contributing](#contributing)
   - [What's Coming?](#whats-coming)
+
 ---
 
 ## Working with `E-MM1`
@@ -33,13 +34,14 @@ We provide two dataset splits:
 Both splits share the same basic structure:
 
 - An **`infos/`** folder with one CSV **per modality** (e.g., `image.csv`, `audio.csv`, …).  
-  Each file in the dataset is uniquely identified by an **`encord_{modality}_{id}`** column and includes where it’s saved.
+  Each file in the dataset is uniquely identified by an **`encord_{modality}_id`** column and includes a path to where the data is stored if you follow the [Download instructions][download].
 - A **master grouping** that references those IDs to define which items belong together.
+
 
 ## Working with the `E-MM1:100M` Split
 
-**What is in `E-MM1:100M`?** This split contains the large-scale automated dataset built through nearest-neighbour retrieval. 
-For each of ~6.7M captions, we retrieved the top-16 nearest neighbours across all modalities, resulting in over 100M multimodal connections.
+**What is in `E-MM1:100M`?** This split contains the large-scale dataset built with nearest-neighbour retrieval.
+For each of ~6.7M captions, we retrieved the top-16 nearest neighbours across all modalities, resulting in roughly 1B multimodal connections or 100M groups.
 
 ### `E-MM1:100M` file layout
 
@@ -60,27 +62,36 @@ encord_phase_1_dataset/
 └─ data_groups.csv
 ```
 
+> 💡 Note: the CSV files are rather big. Therefore we use `git lfs` to store the large files. Therefor, you have to add a few additional commands when you clone.
+> As an example, if you just want the nearest neighbour, run the following commands:
+> ```
+> git lfs pull --include="e-mm1_100m/infos/*.csv"
+> git lfs pull --include="e-mm1_100m/nn_1/*.csv"
+> ```
+
 
 ### How `E-MM1:100M` groups were formed
 
 We started from ~6.7M captions and retrieved the top-16 nearest neighbours **per modality** for each caption.  
-Each `nn_k/data_groups.csv` contains, for every caption, the IDs of the *k-th* nearest neighbour for each modality.
+Each `nn_{k}/data_groups.csv` contains, for every caption, the IDs of the _k-th_ nearest neighbour for each modality.
 
-### Column conventions
+### `E-MM1:100M` column schema
 
-- `encord_{modality}_id` — unique ID for a specific file in that modality (e.g., `encord_image_id`).
-- `save_folder` — relative folder under your chosen root where the asset is stored.
-- `file_name` — filename of the asset.
-- `encord_text_id` — ID of the caption row in `infos/text.csv`.
-- `caption` — the caption text in `infos/text.csv`.
+| **Column** | **Description** |
+|:---|:---|
+| `encord_{modality}_id` | unique ID for a specific file in that modality (e.g., `encord_image_id`) |
+| `save_folder` | relative folder under your chosen root where the asset is stored.
+| `file_name` | filename of the asset |
+| `encord_text_id` | ID of the caption row in `infos/text.csv` |
+| `caption` | the caption text in `infos/text.csv` |
 
-
-### Phase 1 Example
-
-To download the raw underlying data, please see the [Download page][download].
-
-
+### `E-MM1:100M` Example
 This example constructs a DataFrame of first nearest-neighbour groups, substituting Encord IDs with file paths (Using the file structure as defined and setup in [Download][download])
+
+First, download the raw underlying data by following the instructions on the [Download page][download].
+Second, use `git lfs` to fetch the csv files needed (as the example above).
+
+Now you should be able to 
 
 ```python
 import polars as pl
@@ -88,7 +99,7 @@ import os
 from pathlib import Path
 from itertools import permutations
 
-ROOT_DATA_PATH = os.getenv("ROOT_DATA_PATH")
+ROOT_DATA_PATH = os.getenv("ROOT_DATA_PATH")  # same as in download script
 MODALITIES = ["points", "audio"]
 SEP = str(Path("/"))
 
@@ -170,22 +181,24 @@ output_triplets = output_triplets.join(text_info, on="encord_text_id", how="left
 
 **What is in `E-MM1:1M`?**
 
-- **`triplets.csv`** is in **long format**. Each row is a *triplet* that links:
-  1) a **caption** (`encord_text_id`),  
-  2) a **modality_1 item**, and  
-  3) a **modality_2 item**,  
-  along with an **annotation** describing how well the caption matches the modality_2 candidate.
+- **`triplets.csv`** is in **long format**. Each row is a _triplet_ that links:
+
+  1. a **caption** (`encord_text_id`),
+  2. a **modality_1 item**, and
+  3. a **modality_2 item**,  
+     along with an **annotation** describing how well the caption matches the modality_2 candidate.
 
 - **How triplets were created:**  
-  We started from datasets of *(caption, modality_1)* pairs. Annotators were shown the **caption** and a **candidate modality_2 item** and asked to label the pairing as:
+  We started from datasets of _(caption, modality_1)_ pairs. Annotators were shown the **caption** and a **candidate modality_2 item** and asked to label the pairing as:
+
   - **Good Match**
   - **Partial Match**
   - **No Match**
 
 - **`annotation_mapping.csv`** maps the `annotation` codes used in `triplets.csv` to human-readable labels (`1` → `Good Match`,`2` → `Partial Match`,`3` → `Bad Match`)
 
-
 ### `E-MM1:1M` file layout
+
 ```
 encord_phase_2_dataset/
 ├─ infos/
@@ -215,19 +228,19 @@ encord_phase_2_dataset/
 > `encord_{modality}_id`, `save_folder`, and `file_name`. Follow Download Instructions to build file paths as:  
 > `ROOT_DATA_PATH / save_folder / {modality} / file_name`.
 
-
 ### Example: Extracting all Point-Cloud ↔ Audio groups from `E-MM1:1M`
 
 **Simply change the `MODALITIES` variable to specify which modality pairs you want to extract, e.g., `['points','audio','video']` will extract all points-audio and points-video pairs that exist in the dataset. Note that only modality pairs present in the dataset will be extracted. For example as there are no audio-video pairs in the dataset, that combination will be automatically skipped.**
+
 ```python
-import polars as pl 
-import os 
+import polars as pl
+import os
 from pathlib import Path
 from itertools import permutations
 
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
 MODALITIES = ['points','audio']
-SEP = str(Path("/"))  
+SEP = str(Path("/"))
 
 triplets_df = pl.read_csv(Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "triplets.csv" )
 
@@ -245,15 +258,15 @@ for modality in MODALITIES:
                                 pl.read_csv(modality_to_path[modality])
                                 .with_columns(
                                   (
-                                    pl.lit(str(ROOT_DATA_PATH)) + SEP + 
-                                    pl.col('save_folder') + SEP + 
-                                    pl.lit(modality) + SEP + 
+                                    pl.lit(str(ROOT_DATA_PATH)) + SEP +
+                                    pl.col('save_folder') + SEP +
+                                    pl.lit(modality) + SEP +
                                     pl.col('file_name')
                                     )
                                     .alias(f'{modality}_file_path')
                                   )
                                 )
-            
+
 
 modality_pairs = list(permutations(MODALITIES, 2))
 
@@ -261,7 +274,7 @@ modality_pairs = list(permutations(MODALITIES, 2))
 processed_triplets = []
 for mod1, mod2 in modality_pairs:
     pair_condition = (pl.col('modality_1') == mod1) & (pl.col('modality_2') == mod2)
-    
+
     mod_1_mod_2_triplets = triplets_df.filter(pair_condition)
 
     if mod_1_mod_2_triplets.height == 0:
@@ -284,12 +297,11 @@ for mod1, mod2 in modality_pairs:
 
 output_triplets = pl.concat(processed_triplets)
 
-# optional : get captions
+# optional : get captions
 text_info = pl.read_csv(Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "text.csv")
 text_info = text_info.select(['encord_text_id','caption'])
 output_triplets = output_triplets.join(text_info,on='encord_text_id',how='left')
 ```
-
 
 ## `EShot`: A Zero-Shot Benchmark for Audio <> Point Cloud
 
@@ -315,15 +327,19 @@ eshot/
 ├─ category_to_audio_ids.json
 
 ```
-### File Descriptions
+
+### File Descriptions
 
 #### `audio/`
+
 Directory containing all audio files. Files are referenced by their `eshot_audio_id` from the CSV files.
 
 #### `point-clouds/`
+
 Directory containing all point cloud files. Files are referenced by their `eshot_points_id` from the CSV files.
 
 #### `eshot_audio_info.csv`
+
 Complete metadata for each audio sample.
 
 eshot_audio_id | youtube_id | start_time | end_time
@@ -334,20 +350,21 @@ eshot_audio_id | youtube_id | start_time | end_time
 - `end_time`: End timestamp of the audio clip (seconds)
 
 #### `eshot_points_info.csv`
+
 Complete metadata for each point cloud sample.
 
 **Schema**:
 
-eshot_point_id |  object_id
+eshot_point_id | object_id
 
 - `eshot_point_id`: Unique identifier for the point cloud sample
 - `object_id`: Source 3D object identifier
 
 #### `category_to_audio_ids.json`
+
 Maps categories to audio samples.
 
 **Schema**: `dict[str, list[int]]`
-
 
 ```
 {
@@ -361,7 +378,6 @@ Each of the 112 categories maps to a list of eshot_audio_id values. This determi
 category_to_point_ids.json
 Maps categories to point cloud samples.
 **Schema**: `dict[str, list[int]]`
-
 
 ```{
   "category_name": [eshot_point_id_1, eshot_point_id_2, ...],
@@ -381,14 +397,12 @@ Each of the 112 categories maps to a list of eshot_point_id values. This determi
    - [ ] Normalize to unit length
 3. [ ] Classify test samples by nearest class vector
 
-
-#### Example 
-
+#### Example
 
 ```python
 import polars as pl
 import numpy as np
-import json 
+import json
 from pathlib import Path
 
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
@@ -407,10 +421,10 @@ audio_info = pl.read_csv('data/eshot/eshot_audio_info.csv')
 points_info = pl.read_csv('data/eshot/eshot_audio_info.csv')
 
 with open('data/eshot/category_to_point_ids.json','r') as f:
-  category_to_point_ids = json.load(f) 
+  category_to_point_ids = json.load(f)
 
 with open('data/eshot/category_to_audio_ids.json','r') as f:
-  category_to_audio_ids = json.load(f) 
+  category_to_audio_ids = json.load(f)
 
 
 
@@ -455,49 +469,48 @@ for category,point_ids in category_to_point_ids.items():
 
 
   points_class_vectors[category] = point_cat_vector
-  
+
 
 sorted_categories = sorted(category_to_audio_ids.keys())
 
 audio_class_embs = np.stack([audio_class_vectors[cat] for cat in sorted_categories])
 point_class_embs = np.stack([points_class_vectors[cat] for cat in sorted_categories])
 
-# audio to points
-for i, category in enumerate(sorted_categories): 
+# audio to points
+for i, category in enumerate(sorted_categories):
     print(f"\n{'='*60}")
     print(f"Category: {category}")
     print(f"{'='*60}")
     audio_embs = category_to_audio_embeddings[category]
     audio_embs = audio_embs / np.linalg.norm(audio_embs, axis=1, keepdims=True)
     sim_mat = audio_embs @ point_class_embs.T
-    
-    classifications = np.argsort(sim_mat, axis=1)[:, ::-1]  
+
+    classifications = np.argsort(sim_mat, axis=1)[:, ::-1]
 
     print("\n[Audio → Points Classification]")
     for k in [1, 5]:
 
         top_k_predictions = classifications[:, :k]
-        correct = np.any(top_k_predictions == i, axis=1)  
+        correct = np.any(top_k_predictions == i, axis=1)
         accuracy = np.mean(correct)
         print(f"  Top-{k} Accuracy: {accuracy:.4f} ({int(correct.sum())}/{len(correct)} correct)")
 
-    
+
 
     point_embs = category_to_point_embeddings[category]
     point_embs = point_embs / np.linalg.norm(point_embs,axis=1,keepdims=True)
     sim_mat = point_embs @ audio_class_embs.T
-    
+
     classifications = np.argsort(sim_mat,axis=1)[:,::-1]
-    
+
     print("\n[Points → Audio Classification]")
     for k in [1, 5]:
 
         top_k_predictions = classifications[:, :k]
-        correct = np.any(top_k_predictions == i, axis=1)  
+        correct = np.any(top_k_predictions == i, axis=1)
         accuracy = np.mean(correct)
         print(f"  Top-{k} Accuracy: {accuracy:.4f} ({int(correct.sum())}/{len(correct)} correct)")
 ```
-
 
 ...
 
