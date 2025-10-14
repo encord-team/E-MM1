@@ -121,7 +121,7 @@ for modality in CHOSEN_MODALITIES:
 nn1 = nn1.join(text_info.select(
   [
     'encord_text_id'
-    'cap,
+    'caprtion,
   ],
   on='encord_text_id',
   how='left'
@@ -129,7 +129,113 @@ nn1 = nn1.join(text_info.select(
 
 ```
 
-### 1M Human Rated
+# Working with the Encord Phase 2 (1M Human Annotated) Dataset
+
+## Layout
+```
+encord_phase_2_dataset/
+├─ infos/
+│ ├─ video.csv
+│ ├─ audio.csv
+│ ├─ image.csv
+│ ├─ points.csv
+│ └─ text.csv
+├─ triplets.csv
+├─ annotation_mapping.csv
+
+```
+## What’s in Phase 2?
+
+- **`triplets.csv`** is in **long format**. Each row is a *triplet* that links:
+  1) a **caption** (`encord_text_id`),  
+  2) a **modality_1 item**, and  
+  3) a **modality_2 item**,  
+  along with an **annotation** describing how well the caption matches the modality_2 candidate.
+
+- **How triplets were created:**  
+  We started from datasets of *(caption, modality_1)* pairs. Annotators were shown the **caption** and a **candidate modality_2 item** and asked to label the pairing as:
+  - **Good Match**
+  - **Partial Match**
+  - **No Match**
+
+- **`annotation_mapping.csv`** maps the `annotation` codes used in `triplets.csv` to human-readable labels (`1` → `Good Match`,`2` → `Partial Match`,`3` → `Bad Match`)
+
+
+## Column schema
+
+`triplets.csv` columns:
+
+- `encord_text_id` — ID of the caption (joins to `infos/text.csv`).
+- `modality_1` — modality of item 1 (e.g., `image`, `audio`, `video`, `points`).
+- `modality_2` — modality of item 2 (e.g., `image`, `audio`, `video`, `points`).
+- `annotated_modality` — the modality shown to annotators with the caption (usually equals `modality_2`).
+- `encord_{modality_1}_id` — Encord ID for item 1 (e.g., `encord_image_id` when `modality_1 == "image"`).
+- `encord_{modality_2}_id` — Encord ID for item 2 (e.g., `encord_audio_id` when `modality_2 == "audio"`).
+- `annotation` — categorical code for the label (join to `annotation_mapping.csv` for the readable value).
+
+> The `infos/*.csv` files share the same conventions as Phase 1: each contains
+> `encord_{modality}_id`, `save_folder`, and `file_name`. Follow Download Instructions to build file paths as:  
+> `ROOT_DATA_PATH / save_folder / {modality} / file_name`.
+
+
+### Example: Extracting all point cloud - audio groups
+
+```python
+import polar as pl 
+import os 
+
+ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
+
+MODALITIES = ['points','audio']
+
+triplets_df = pl.read_csv('data/encord_phase_2_dataset/triplets.csv)
+
+modality_to_path = {
+                      'image' : 'data/encord_phase_2_dataset/infos/image.csv,
+                      'audio' : 'data/encord_phase_2_dataset/infos/audio.csv,
+                      'video' : 'data/encord_phase_2_dataset/infos/video.csv,
+                      'points' : 'data/encord_phase_2_dataset/infos/points.csv
+}
+
+modality_to_info = {}
+
+for modality in MODALITIES:
+  modality_to_info[modality] = pl.read_csv(modality_to_path[modality])
+
+modality_pairs = list(permutations(MODALITIES, 2))
+
+
+perocessed_triplets = []
+for mod1, mod2 in modality_pairs:
+    pair_condition = (pl.col('modality_1') == mod1) & (pl.col('modality_2') == mod2)
+    
+    mod_1_mod_2_triplets = triplets.filter(pair_condition)
+
+    if mod_1_mod_2_triplets.height == 0:
+      continue
+
+    mod_1_info = modality_to_info[mod1].select([
+      f'encord_{mod1}_id',
+      'file_path'
+      ]
+      ).rename({"file_path","modality_1_file_path"})
+    mod_2_info = modality_to_info[mod2].select([
+      'fencord_{mod2}_id',
+      'file_path'
+      ]
+      ).rename({"file_path","modality_2_file_path"})
+    mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(mod_1_info,on=f'encord_{mod1}_id',how='left')
+    mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(mod_2_info,on=f'encord_{mod2}_id',how='left')
+
+    processed_triplets.append(mod_1_mod_2_triplets)
+
+output_triplets = pl.concat(processed_triplets)
+
+
+)
+
+```
+
 
 ## `EShot`: A Zero-Shot Benchmark for Audio <> Point Cloud
 
