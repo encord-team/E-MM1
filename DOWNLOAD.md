@@ -1,7 +1,11 @@
 # Data Download Guide
 This guide provides code to download all raw data files from the various source datasets used in this project. The download scripts utilize the metadata in the infos dataframes 
 (located at `/encord_phase_1_dataset/infos/` and `/encord_phase_2_dataset/infos/`) to automatically organize files into the appropriate directory structure.
-Repository Structure
+
+
+### Repository Structure
+
+
 All downloaded files are organized into the following structure under your ROOT_DATA_PATH:
 
 ```
@@ -21,8 +25,14 @@ ROOT_FOLDER/
 ```
 
 phase_1_only: Contains files exclusive to Phase 1
+
+
 phase_2_only: Contains files exclusive to Phase 2
+
+
 shared: Contains files that appear in both Phase 1 and Phase 2
+
+
 The download scripts read the save_folder and file_name columns from each info dataframe to place files in the correct locations automatically. For each code chunk you need to set the ROOT_DATA_PATH and the path to your chosen infos dataframe you want to extract data from. 
 
 
@@ -89,8 +99,10 @@ logger = logging.getLogger(__name__)
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
 DF_PATH = 'path/to/your/info/df.csv'  # Change this to the phase {1,2} {audio,video} df path 
 
-# Load and filter out datasets with no start/end times provided
+
 df = pl.read_csv(DF_PATH) 
+
+# VidGen-1M does not provide start/end times of video clips so we have to filter these out and download them separately (method given below)
 df = df.filter(pl.col('source_dataset') != 'VidGen-1M')
 
 # Download videos/audio
@@ -139,7 +151,7 @@ for row in df.iter_rows(named=True):
 
 For VidGen-1M videos start/end times are not provided. But you can download the dataset directly from HuggingFace and extract the relevant file_id entries:
 HuggingFace Dataset: `Fudan-FUXI/VIDGEN-1M`
-Filter your dataframe for VidGen-1M entries and use the file_id column to locate the corresponding video files in the downloaded dataset. Match the file_id from your dataframe to the files in the VidGen-1M dataset structure, then copy them to your ROOT_DATA_PATH/save_folder/file_name locations.
+
 
 ```python
 import os
@@ -592,7 +604,7 @@ print(f"\nComplete! Moved: {moved}, Errors: {errors}")
 
 # Points
 
-all point clouds are available to download from OpenShape on huggingface: https://huggingface.co/datasets/OpenShape/openshape-training-data/tree/main 
+All point clouds are available to download from OpenShape on huggingface: https://huggingface.co/datasets/OpenShape/openshape-training-data/tree/main 
 Files can be identified using the file_id column in infos/points.csv
 
 ```python
@@ -679,4 +691,4 @@ print("\nAll datasets processed!")
 ```
 ## Captions
 
-All captions are available in the 'caption' colun in infos/text.csv
+All captions are available in the 'caption' column in infos/text.csv
