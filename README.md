@@ -2,19 +2,28 @@
 
 With the E-MM1 dataset, we contribute >100M connections between data from five different modalities; Images, Videos, Audio, Point Clouds, Captions.
 
-## Getting the Data
+## Table of Contents
 
-The following describes how to use the dataset. We further provide
+- [Working with the Encord Datasets](#working-with-the-encord-datasets)
+- [Working with the Encord Phase 1 Dataset](#working-with-the-encord-phase-1-dataset)
+  - [Phase 1 layout](#phase-1-layout)
+  - [How Phase-1 groups were formed](#how-phase-1-groups-were-formed)
+  - [Column conventions](#column-conventions)
+    - [Phase 1 Example](#phase-1-example)
+- [Working with the Encord Phase 2 (1M Human Annotated) Dataset](#working-with-the-encord-phase-2-1m-human-annotated-dataset)
+  - [Layout](#layout)
+  - [Column schema](#column-schema)
+    - [Example: Extracting all point cloud - audio groups](#example-extracting-all-point-cloud---audio-groups)
+- [EShot: A Zero-Shot Benchmark for Audio <> Point Cloud](#eshot-a-zero-shot-benchmark-for-audio--point-cloud)
+  - [Directory Structure](#directory-structure)
+  - [File Descriptions](#file-descriptions)
+    - [Evaluation Protocol](#evaluation-protocol)
+    - [Example](#example)
+- [Contributing](#contributing)
+  - [What's Coming?](#whats-coming)
+---
 
-To download the raw underlying data, please see the [Download page][download].
-
-## Using the data
-
-> How do you link the DFs in LFS to the raw files stored _somewhere_ on the disc?
-
-
-
-# Working with the Encord Datasets
+## Working with the Encord Datasets
 
 We provide two datasets:
 
@@ -27,8 +36,12 @@ Both phases share the same basic structure:
   Each file in the dataset is uniquely identified by an **`encord_{modality}_id`** column and includes where it’s saved.
 - A **master grouping** that references those IDs to define which items belong together.
 
+## Working with the Encord Phase 1 Dataset
 
-## Phase 1 layout
+**Whats in Phase 1?** Phase 1 contains the large-scale automated dataset built through nearest-neighbour retrieval. For each of ~6.7M captions, we retrieved the top-16 nearest neighbours across all modalities, resulting in over 100M multimodal connections.
+
+### Phase 1 layout
+
 ```
 encord_phase_1_dataset/
 ├─ infos/
@@ -52,7 +65,7 @@ encord_phase_1_dataset/
 We started from ~6.7M captions and retrieved the top-16 nearest neighbours **per modality** for each caption.  
 Each `nn_k/data_groups.csv` contains, for every caption, the IDs of the *k-th* nearest neighbour for each modality.
 
-## Column conventions
+### Column conventions
 
 - `encord_{modality}_id` — unique ID for a file in that modality (e.g., `encord_image_id`).
 - `save_folder` — relative folder under your chosen root where the asset is stored.
@@ -61,7 +74,9 @@ Each `nn_k/data_groups.csv` contains, for every caption, the IDs of the *k-th* n
 - *`caption` — the caption text in `infos/text.csv`.
 
 
-### Phase 1 Example
+#### Phase 1 Example
+
+To download the raw underlying data, please see the [Download page][download].
 
 
 If you followed the file structure / guide in [Download][download], the you can follow this example to create a dataframe of all 1st nearest neighbour groups with encord_ids replaced by file_paths:
@@ -129,22 +144,9 @@ nn1 = nn1.join(text_info.select(
 
 ```
 
-# Working with the Encord Phase 2 (1M Human Annotated) Dataset
+## Working with the Encord Phase 2 (1M Human Annotated) Dataset
 
-## Layout
-```
-encord_phase_2_dataset/
-├─ infos/
-│ ├─ video.csv
-│ ├─ audio.csv
-│ ├─ image.csv
-│ ├─ points.csv
-│ └─ text.csv
-├─ triplets.csv
-├─ annotation_mapping.csv
-
-```
-## What’s in Phase 2?
+**Whats in Phase 2?**
 
 - **`triplets.csv`** is in **long format**. Each row is a *triplet* that links:
   1) a **caption** (`encord_text_id`),  
@@ -161,7 +163,21 @@ encord_phase_2_dataset/
 - **`annotation_mapping.csv`** maps the `annotation` codes used in `triplets.csv` to human-readable labels (`1` → `Good Match`,`2` → `Partial Match`,`3` → `Bad Match`)
 
 
-## Column schema
+### Layout
+```
+encord_phase_2_dataset/
+├─ infos/
+│ ├─ video.csv
+│ ├─ audio.csv
+│ ├─ image.csv
+│ ├─ points.csv
+│ └─ text.csv
+├─ triplets.csv
+├─ annotation_mapping.csv
+
+```
+
+### Column schema
 
 `triplets.csv` columns:
 
@@ -178,7 +194,7 @@ encord_phase_2_dataset/
 > `ROOT_DATA_PATH / save_folder / {modality} / file_name`.
 
 
-### Example: Extracting all point cloud - audio groups
+#### Example: Extracting all point cloud - audio groups
 
 ```python
 import polar as pl 
@@ -243,13 +259,13 @@ A benchmark dataset for evaluating zero-shot cross-modal classification between 
 
 [Eval data download here](gs://ml-team-data-bucket/eshot)
 
-## Dataset Specifications
+**Whats in EShot?**
 
 - **~3,500 samples** across audio and point cloud modalities
 - **112 categories** for classification
 - **Bidirectional evaluation**: audio→points and points→audio
 
-## Directory Structure
+### Directory Structure
 
 ```
 eshot/
@@ -261,15 +277,15 @@ eshot/
 ├─ category_to_audio_ids.json
 
 ```
-## File Descriptions
+### File Descriptions
 
-### `audio/`
+#### `audio/`
 Directory containing all audio files. Files are referenced by their `eshot_audio_id` from the CSV files.
 
-### `point-clouds/`
+#### `point-clouds/`
 Directory containing all point cloud files. Files are referenced by their `eshot_points_id` from the CSV files.
 
-### `eshot_audio_info.csv`
+#### `eshot_audio_info.csv`
 Complete metadata for each audio sample.
 
 eshot_audio_id | youtube_id | start_time | end_time
@@ -279,7 +295,7 @@ eshot_audio_id | youtube_id | start_time | end_time
 - `start_time`: Start timestamp of the audio clip (seconds)
 - `end_time`: End timestamp of the audio clip (seconds)
 
-### `eshot_points_info.csv`
+#### `eshot_points_info.csv`
 Complete metadata for each point cloud sample.
 
 **Schema**:
@@ -289,7 +305,7 @@ eshot_point_id |  object_id
 - `eshot_point_id`: Unique identifier for the point cloud sample
 - `object_id`: Source 3D object identifier
 
-### `category_to_audio_ids.json`
+#### `category_to_audio_ids.json`
 Maps categories to audio samples.
 
 **Schema**: `dict[str, list[int]]`
@@ -317,7 +333,7 @@ Maps categories to point cloud samples.
 
 Each of the 112 categories maps to a list of eshot_point_id values. This determines the class of each point cloud.
 
-### Evaluation Protocol
+#### Evaluation Protocol
 
 Zero-shot classification using embedding models:
 
@@ -334,7 +350,7 @@ Zero-shot classification using embedding models:
 
 
 
-## Example 
+#### Example 
 
 
 ```python
@@ -346,7 +362,7 @@ felix write example code here
 
 ## Contributing
 
-## What's Coming?
+### What's Coming?
 
 - [ ] We will publish pre-computed embeddings used to build the 100M dataset as described in Section 3.1.1 in [the paper][paper].
 - [ ] We will publish a model with weights that was trained on the dataset. The model can embed all five modalities into a unified embedding space.
