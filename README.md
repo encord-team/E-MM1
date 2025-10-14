@@ -71,7 +71,7 @@ Each `nn_k/data_groups.csv` contains, for every caption, the IDs of the *k-th* n
 - `save_folder` — relative folder under your chosen root where the asset is stored.
 - `file_name` — filename of the asset.
 - `encord_text_id` — ID of the caption row in `infos/text.csv`.
-- *`caption` — the caption text in `infos/text.csv`.
+- `caption` — the caption text in `infos/text.csv`.
 
 
 ### Phase 1 Example
@@ -79,7 +79,7 @@ Each `nn_k/data_groups.csv` contains, for every caption, the IDs of the *k-th* n
 To download the raw underlying data, please see the [Download page][download].
 
 
-This example constructs a DataFrame of first nearest-neighbour groups, substituting Encord IDs with file paths (following the file structure defined in the [Download][download_page], )
+This example constructs a DataFrame of first nearest-neighbour groups, substituting Encord IDs with file paths (following the file structure defined in the [Download page][download], )
 
 ```python
 
@@ -204,13 +204,13 @@ ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
 
 MODALITIES = ['points','audio']
 
-triplets_df = pl.read_csv('data/encord_phase_2_dataset/triplets.csv)
+triplets_df = pl.read_csv('data/encord_phase_2_dataset/triplets.csv')
 
 modality_to_path = {
-                      'image' : 'data/encord_phase_2_dataset/infos/image.csv,
-                      'audio' : 'data/encord_phase_2_dataset/infos/audio.csv,
-                      'video' : 'data/encord_phase_2_dataset/infos/video.csv,
-                      'points' : 'data/encord_phase_2_dataset/infos/points.csv
+                      'image' : 'data/encord_phase_2_dataset/infos/image.csv',
+                      'audio' : 'data/encord_phase_2_dataset/infos/audio.csv',
+                      'video' : 'data/encord_phase_2_dataset/infos/video.csv',
+                      'points' : 'data/encord_phase_2_dataset/infos/points.csv'
 }
 
 modality_to_info = {}
@@ -251,9 +251,6 @@ output_triplets = pl.concat(processed_triplets)
 text_info = pl.read_csv('data/encord_phase_2_dataset/infos/text.csv')
 text_info = text_info.select(['encord_text_id','caption'])
 output_triplets = output_triplets.join(text_info,on='encord_text_id',how='left')
-
-
-)
 
 ```
 
