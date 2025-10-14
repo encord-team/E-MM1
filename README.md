@@ -67,7 +67,7 @@ Each `nn_k/data_groups.csv` contains, for every caption, the IDs of the *k-th* n
 
 ### Column conventions
 
-- `encord_{modality}_id` — unique ID for a file in that modality (e.g., `encord_image_id`).
+- `encord_{modality}_id` — unique ID for a specific file in that modality (e.g., `encord_image_id`).
 - `save_folder` — relative folder under your chosen root where the asset is stored.
 - `file_name` — filename of the asset.
 - `encord_text_id` — ID of the caption row in `infos/text.csv`.
@@ -79,11 +79,9 @@ Each `nn_k/data_groups.csv` contains, for every caption, the IDs of the *k-th* n
 To download the raw underlying data, please see the [Download page][download].
 
 
-This example constructs a DataFrame of first nearest-neighbour groups, substituting Encord IDs with file paths (following the file structure defined in the [Download page][download], )
+This example constructs a DataFrame of first nearest-neighbour groups, substituting Encord IDs with file paths (Using the file structure as defined and setup in [Download][download])
 
 ```python
-
-
 ROOT_DATA_PATH = os.getenv("ROOT_DATA_PATH")
 
 CHOSEN_MODALIIES = ["image", "audio", "video", "points"]
@@ -115,6 +113,7 @@ for modality in CHOSEN_MODALITIES:
     
     info_df = modality_to_info[modality] 
     info_df = info_df.with_columns(
+      # Here we use the file_structure as in DOWNLOAD.md
         (
             pl.lit(str(ROOT_DATA_PATH)) + SEP + 
             pl.col('save_folder') + SEP + 
@@ -322,8 +321,9 @@ Maps categories to audio samples.
 
 Each of the 112 categories maps to a list of eshot_audio_id values. This determines the class of each audio file
 
-category_to_point_ids.json
+#### category_to_point_ids.json
 Maps categories to point cloud samples.
+
 **Schema**: `dict[str, list[int]]`
 
 
@@ -339,11 +339,11 @@ Each of the 112 categories maps to a list of eshot_point_id values. This determi
 
 **Zero-shot classification** using embedding models:
 
-1. [ ] Embed all samples in both modalities using your model
-2. [ ] For each category, create a **class vector** from the opposing modality:
-   - [ ] Compute mean of all embeddings in that category
-   - [ ] Normalize to unit length
-3. [ ] Classify test samples by nearest class vector
+1. Embed all samples in both modalities using your model
+2. For each category, create a **class vector** from the opposing modality:
+   - Compute mean of all embeddings in that category
+   - Normalize to unit length
+3. Classify test samples by nearest class vector
 
 
 #### Example 
