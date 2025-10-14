@@ -13,12 +13,12 @@ With the E-MM1 dataset, we contribute >100M connections between data from five d
 - [Working with the Encord Phase 2 (1M Human Annotated) Dataset](#working-with-the-encord-phase-2-1m-human-annotated-dataset)
   - [Layout](#layout)
   - [Column schema](#column-schema)
-    - [Example: Extracting all point cloud - audio groups](#example-extracting-all-point-cloud---audio-groups)
+  - [Example: Extracting all point cloud - audio groups](#example-extracting-all-point-cloud---audio-groups)
 - [EShot: A Zero-Shot Benchmark for Audio <> Point Cloud](#eshot-a-zero-shot-benchmark-for-audio--point-cloud)
   - [Directory Structure](#directory-structure)
   - [File Descriptions](#file-descriptions)
-    - [Evaluation Protocol](#evaluation-protocol)
-    - [Example](#example)
+  - [Evaluation Protocol](#evaluation-protocol)
+   - [Example](#example)
 - [Contributing](#contributing)
   - [What's Coming?](#whats-coming)
 ---
@@ -74,12 +74,12 @@ Each `nn_k/data_groups.csv` contains, for every caption, the IDs of the *k-th* n
 - *`caption` — the caption text in `infos/text.csv`.
 
 
-#### Phase 1 Example
+### Phase 1 Example
 
 To download the raw underlying data, please see the [Download page][download].
 
 
-If you followed the file structure / guide in [Download][download], the you can follow this example to create a dataframe of all 1st nearest neighbour groups with encord_ids replaced by file_paths:
+This example constructs a DataFrame of first nearest-neighbour groups, substituting Encord IDs with file paths (following the file structure defined in the [Download][download_page], )
 
 ```python
 
@@ -136,7 +136,7 @@ for modality in CHOSEN_MODALITIES:
 nn1 = nn1.join(text_info.select(
   [
     'encord_text_id'
-    'caprtion,
+    'caption,
   ],
   on='encord_text_id',
   how='left'
@@ -194,7 +194,7 @@ encord_phase_2_dataset/
 > `ROOT_DATA_PATH / save_folder / {modality} / file_name`.
 
 
-#### Example: Extracting all point cloud - audio groups
+### Example: Extracting all Point-Cloud <> Audio groups from Phase 2
 
 ```python
 import polar as pl 
@@ -246,6 +246,11 @@ for mod1, mod2 in modality_pairs:
     processed_triplets.append(mod_1_mod_2_triplets)
 
 output_triplets = pl.concat(processed_triplets)
+
+# optional : get captions
+text_info = pl.read_csv('data/encord_phase_2_dataset/infos/text.csv')
+text_info = text_info.select(['encord_text_id','caption'])
+output_triplets = output_triplets.join(text_info,on='encord_text_id',how='left')
 
 
 )
@@ -333,7 +338,7 @@ Maps categories to point cloud samples.
 
 Each of the 112 categories maps to a list of eshot_point_id values. This determines the class of each point cloud.
 
-#### Evaluation Protocol
+### Evaluation Protocol
 
 **Zero-shot classification** using embedding models:
 
