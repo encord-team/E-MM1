@@ -82,10 +82,13 @@ To download the raw underlying data, please see the [Download page][download].
 This example constructs a DataFrame of first nearest-neighbour groups, substituting Encord IDs with file paths (Using the file structure as defined and setup in [Download][download])
 
 ```python
+import os
+from pathlib import Path
+import polars as pl
+
 ROOT_DATA_PATH = os.getenv("ROOT_DATA_PATH")
 
-CHOSEN_MODALIIES = ["image", "audio", "video", "points"]
-
+CHOSEN_MODALITIES = ["image", "audio", "video", "points"]
 
 nn1_groups = pl.read_csv("data/encord_phase_1_dataset/nn_1/data_groups.csv")
 image_info = pl.read_csv("data/encord_phase_1_dataset/infos/image.csv")
@@ -94,26 +97,21 @@ video_info = pl.read_csv("data/encord_phase_1_dataset/infos/video.csv")
 points_info = pl.read_csv("data/encord_phase_1_dataset/infos/points.csv")
 text_info = pl.read_csv("data/encord_phase_1_dataset/infos/text.csv")
 
- modality_to_info = {
-  "image" : image_info,
-  "audio" : audio_info,
-  "video" : video_info,
-  "points" : point_info,
-  "text" : text_info 
+modality_to_info = {
+    "image": image_info,
+    "audio": audio_info,
+    "video": video_info,
+    "points": points_info,
+    "text": text_info 
 }
-
-from pathlib import Path
-import polars as pl
 
 ROOT_DATA_PATH = Path("your/root/path")
 SEP = str(Path("/"))  
 
-
 for modality in CHOSEN_MODALITIES:
-    
     info_df = modality_to_info[modality] 
     info_df = info_df.with_columns(
-      # Here we use the file_structure as in DOWNLOAD.md
+        # Here we use the file_structure as in DOWNLOAD.md
         (
             pl.lit(str(ROOT_DATA_PATH)) + SEP + 
             pl.col('save_folder') + SEP + 
@@ -123,23 +121,15 @@ for modality in CHOSEN_MODALITIES:
     )
     join_col = f'encord_{modality}_index'
 
-    nn1_groups = nn1_groups.join(info_df.select(
-      [
+    nn1_groups = nn1_groups.join(info_df.select([
         join_col,
-        file_path
-      ],
-      on = join_col,
-      how = 'left
-    ))
+        'file_path'
+    ]), on=join_col, how='left')
 
-nn1 = nn1.join(text_info.select(
-  [
-    'encord_text_id'
-    'caption,
-  ],
-  on='encord_text_id',
-  how='left'
-))
+nn1_groups = nn1_groups.join(text_info.select([
+    'encord_text_id',
+    'caption'
+]), on='encord_text_id', how='left')
 
 ```
 
@@ -196,8 +186,13 @@ encord_phase_2_dataset/
 ### Example: Extracting all Point-Cloud <> Audio groups from Phase 2
 
 ```python
-import polar as pl 
+# Prerequisites: 
+# - Set ROOT_DATA_PATH environment variable
+
+import polars as pl
 import os 
+from itertools import permutations
+from pathlib import Path
 
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
 
@@ -206,50 +201,59 @@ MODALITIES = ['points','audio']
 triplets_df = pl.read_csv('data/encord_phase_2_dataset/triplets.csv')
 
 modality_to_path = {
-                      'image' : 'data/encord_phase_2_dataset/infos/image.csv',
-                      'audio' : 'data/encord_phase_2_dataset/infos/audio.csv',
-                      'video' : 'data/encord_phase_2_dataset/infos/video.csv',
-                      'points' : 'data/encord_phase_2_dataset/infos/points.csv'
+    'image': 'data/encord_phase_2_dataset/infos/image.csv',
+    'audio': 'data/encord_phase_2_dataset/infos/audio.csv',
+    'video': 'data/encord_phase_2_dataset/infos/video.csv',
+    'points': 'data/encord_phase_2_dataset/infos/points.csv'
 }
 
 modality_to_info = {}
 
 for modality in MODALITIES:
-  modality_to_info[modality] = pl.read_csv(modality_to_path[modality])
+    info_df = pl.read_csv(modality_to_path[modality])
+    # Add file path construction
+    info_df = info_df.with_columns(
+        (
+            pl.lit(str(ROOT_DATA_PATH)) + "/" + 
+            pl.col('save_folder') + "/" + 
+            pl.lit(modality) + "/" + 
+            pl.col('file_name')
+        ).alias('file_path')
+    )
+    modality_to_info[modality] = info_df
 
 modality_pairs = list(permutations(MODALITIES, 2))
 
-
-perocessed_triplets = []
+processed_triplets = []
 for mod1, mod2 in modality_pairs:
     pair_condition = (pl.col('modality_1') == mod1) & (pl.col('modality_2') == mod2)
     
-    mod_1_mod_2_triplets = triplets.filter(pair_condition)
+    mod_1_mod_2_triplets = triplets_df.filter(pair_condition)
 
     if mod_1_mod_2_triplets.height == 0:
-      continue
+        continue
 
     mod_1_info = modality_to_info[mod1].select([
-      f'encord_{mod1}_id',
-      'file_path'
-      ]
-      ).rename({"file_path","modality_1_file_path"})
+        f'encord_{mod1}_id',
+        'file_path'
+    ]).rename({"file_path": "modality_1_file_path"})
+    
     mod_2_info = modality_to_info[mod2].select([
-      'fencord_{mod2}_id',
-      'file_path'
-      ]
-      ).rename({"file_path","modality_2_file_path"})
-    mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(mod_1_info,on=f'encord_{mod1}_id',how='left')
-    mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(mod_2_info,on=f'encord_{mod2}_id',how='left')
+        f'encord_{mod2}_id',
+        'file_path'
+    ]).rename({"file_path": "modality_2_file_path"})
+    
+    mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(mod_1_info, on=f'encord_{mod1}_id', how='left')
+    mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(mod_2_info, on=f'encord_{mod2}_id', how='left')
 
     processed_triplets.append(mod_1_mod_2_triplets)
 
 output_triplets = pl.concat(processed_triplets)
 
-# optional : get captions
+# optional : get captions
 text_info = pl.read_csv('data/encord_phase_2_dataset/infos/text.csv')
 text_info = text_info.select(['encord_text_id','caption'])
-output_triplets = output_triplets.join(text_info,on='encord_text_id',how='left')
+output_triplets = output_triplets.join(text_info, on='encord_text_id', how='left')
 
 ```
 
