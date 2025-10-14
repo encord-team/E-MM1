@@ -71,6 +71,7 @@ Instructions on how to install + ref to the original docs.
 
 
 Download videos or audio from YouTube using yt-dlp with time-based segmentation:
+Note: We include this as a representative example of how to download videos but for bulk-downloading **All** videos, we would encourage people to look elsewhere for more robust `yt-dlp` based solutions
 ```python
 import os
 import subprocess
@@ -112,6 +113,7 @@ for row in df.iter_rows(named=True):
     cmd = [
         'yt-dlp',
         f'https://www.youtube.com/watch?v={ytid}',
+        # You may need to pass cookies in
         '--download-sections', f'*{start_time}-{end_time}',
         '-o', str(output_path),
     ]
@@ -132,7 +134,6 @@ for row in df.iter_rows(named=True):
     except Exception as e:
         logger.error(f"Unexpected error downloading {row['file_name']}: {e}")
 ```
-<!-- Tested to work -->
 
 ## VidGen-1M Videos
 
@@ -243,7 +244,6 @@ def download_vidgen_videos():
 if __name__ == "__main__":
     download_vidgen_videos()
 ```
-<!-- Tested to work -->
 # Image
 
 For image we need to treat each dataset differently
@@ -439,7 +439,6 @@ def download_imagenet(df):
 
         print(f"Found and saved {found_count}/{len(needed_file_ids)} images")
 ```
-<!-- Tested to work -->
 
 ## Flickr30k
 
@@ -456,10 +455,8 @@ from tqdm import tqdm
 
 
 
-DF_PATH = '/lambda/nfs/ml-data/data/felix/encord_phase_1_dataset/infos/image.csv' # '/path/to/image/df'
+DF_PATH = '/path/to/your/image/df.csv
 df = pl.read_csv(DF_PATH)
-
-df = df.head(10)
 
 print("Downloading Flickr30k images...")
 zip_path = hf_hub_download(
@@ -486,7 +483,7 @@ else:
 
 print(f"Images extracted to: {image_source_folder}")
 
-#
+
 flickr_df = df.filter(pl.col('source_dataset') == 'Flickr30k')
 print(f"Found {len(flickr_df)} Flickr30k images to process")
 
@@ -535,13 +532,12 @@ PROCESSES_COUNT = 16
 THREAD_COUNT = 64
 RESIZE_MODE = 'no'
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
-DF_PATH = '/lambda/nfs/ml-data/data/felix/encord_phase_1_dataset/infos/image.csv'
+DF_PATH = '/path/to/your/image/df.csv
 
 #STEP 1: DOWNLOAD WITH IMG2DATASET 
 print("Loading dataframe...")
 df = pl.read_csv(DF_PATH)
 df = df.filter(pl.col('source_dataset') == 'Google Conceptual Captions')
-df = df.head()
 
 
 with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as temp_file:
@@ -614,11 +610,9 @@ from tqdm import tqdm
 
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
 REPO_ID = "OpenShape/openshape-training-data"
-DF_PATH = '/lambda/nfs/ml-data/data/felix/encord_phase_1_dataset/infos/points.csv'
+DF_PATH = '/path/to/your/image/points.csv
 
 df = pl.read_csv(DF_PATH)
-
-df = df.head(100)
 ROOT_DATASETS = {
     '3D-FUTURE': '3D-FUTURE.tar.gz',
     'ABO': 'ABO.tar.gz',
@@ -689,7 +683,6 @@ for i in tqdm(range(N_OBJAVERSE_TARS), desc="Objaverse tars"):
 
 print("\nAll datasets processed!")
 ```
-<!-- Checked to be okay -->
 ## Captions
 
 All captions are available in the 'caption' column in infos/text.csv
