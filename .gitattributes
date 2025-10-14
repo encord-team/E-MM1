@@ -55,3 +55,5 @@ datasets/eshot/eshot_audio_info.csv filter=lfs diff=lfs merge=lfs -text
 datasets/eshot/eshot_points_info.csv filter=lfs diff=lfs merge=lfs -text
 datasets/eshot/point-clouds filter=lfs diff=lfs merge=lfs -text
 datasets/*/*/*/* filter=lfs diff=lfs merge=lfs -text
+encord_phase_1_dataset/* filter=lfs diff=lfs merge=lfs -text
+encord_phase_1_dataset/*/* filter=lfs diff=lfs merge=lfs -text
