@@ -335,19 +335,13 @@ Each of the 112 categories maps to a list of eshot_point_id values. This determi
 
 #### Evaluation Protocol
 
-Zero-shot classification using embedding models:
+**Zero-shot classification** using embedding models:
 
-
-* Embed all samples in both modalities using your model
-
-* For each category, create a class vector from the opposing modality:
-
-* Compute mean of all embeddings in that category
-
-* Normalize to unit length
-
-* Classify test samples by nearest class vector
-
+1. [ ] Embed all samples in both modalities using your model
+2. [ ] For each category, create a **class vector** from the opposing modality:
+   - [ ] Compute mean of all embeddings in that category
+   - [ ] Normalize to unit length
+3. [ ] Classify test samples by nearest class vector
 
 
 #### Example 
