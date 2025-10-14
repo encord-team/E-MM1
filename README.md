@@ -1,20 +1,20 @@
 [![E-MM1: The Worlds Largest Multimodal Dataset](./supplementary/banner.png)](https://data.encord.com/e-mm1/explorer)
 
-With the E-MM1 dataset, we contribute >100M connections between data from five different modalities; Images, Videos, Audio, Point Clouds, Captions.
+With the E-MM1 dataset, we contribute >100M groups of data (`E-MM1:100M`) from five different modalities; Images, Videos, Audio, Point Clouds, Captions; That's around 1B connections. We further share 1M human ratings of connections (`E-MM1:1M`) and an evaluation dataset, `EShot`.
 
 ## Table of Contents
 
-- [Working with the Encord Datasets](#working-with-the-encord-datasets)
-- [Working with the Encord Phase 1 Dataset](#working-with-the-encord-phase-1-dataset)
-  - [Phase 1 layout](#phase-1-layout)
-  - [How Phase-1 groups were formed](#how-phase-1-groups-were-formed)
+- [Working with `E-MM1`](#working-with-e-mm1)
+- [Working with the `E-MM1:100M` split](#working-with-the-e-mm1100m-split)
+  - [`E-MM1:100M` file layout](#e-mm1100m-file-layout)
+  - [How `E-MM1:100M` groups were formed](#how-e-mm1100m-groups-were-formed)
   - [Column conventions](#column-conventions)
-    - [Phase 1 Example](#phase-1-example)
-- [Working with the Encord Phase 2 (1M Human Annotated) Dataset](#working-with-the-encord-phase-2-1m-human-annotated-dataset)
-  - [Layout](#layout)
-  - [Column schema](#column-schema)
-  - [Example: Extracting all point cloud - audio groups](#example-extracting-all-point-cloud---audio-groups)
-- [EShot: A Zero-Shot Benchmark for Audio <> Point Cloud](#eshot-a-zero-shot-benchmark-for-audio--point-cloud)
+    - [`E-MM1:100M` Example](#e-mm1100m-example)
+- [Working with the `E-MM1:1M` split](#working-with-the-e-mm11m-split)
+  - [`E-MM1:1M` file Layout](#e-mm11m-file-layout)
+  - [`E-MM1:1M` column schema](#e-mm11m-column-schema)
+  - [Example: Extracting all point cloud - audio groups](#example-extracting-all-point-cloud--audio-groups-from-e-mm11m)
+- [EShot: A Zero-Shot Benchmark for Audio ↔ Point Cloud](#eshot-a-zero-shot-benchmark-for-audio--point-cloud)
   - [Directory Structure](#directory-structure)
   - [File Descriptions](#file-descriptions)
   - [Evaluation Protocol](#evaluation-protocol)
@@ -23,24 +23,25 @@ With the E-MM1 dataset, we contribute >100M connections between data from five d
   - [What's Coming?](#whats-coming)
 ---
 
-## Working with the Encord Datasets
+## Working with `E-MM1`
 
-We provide two datasets:
+We provide two dataset splits:
 
-- **Phase 1 (automated)** — very large, built via nearest-neighbour retrieval.
-- **Phase 2 (annotated)** — smaller, human-verified annotations.
+- **`E-MM1:100M` (automated)** — very large, built via nearest-neighbour retrieval.
+- **`E-MM1:1M` (annotated)** — high quality, human-verified annotations.
 
-Both phases share the same basic structure:
+Both splits share the same basic structure:
 
 - An **`infos/`** folder with one CSV **per modality** (e.g., `image.csv`, `audio.csv`, …).  
-  Each file in the dataset is uniquely identified by an **`encord_{modality}_id`** column and includes where it’s saved.
+  Each file in the dataset is uniquely identified by an **`encord_{modality}_{id}`** column and includes where it’s saved.
 - A **master grouping** that references those IDs to define which items belong together.
 
-## Working with the Encord Phase 1 Dataset
+## Working with the `E-MM1:100M` Split
 
-**Whats in Phase 1?** Phase 1 contains the large-scale automated dataset built through nearest-neighbour retrieval. For each of ~6.7M captions, we retrieved the top-16 nearest neighbours across all modalities, resulting in over 100M multimodal connections.
+**What is in `E-MM1:100M`?** This split contains the large-scale automated dataset built through nearest-neighbour retrieval. 
+For each of ~6.7M captions, we retrieved the top-16 nearest neighbours across all modalities, resulting in over 100M multimodal connections.
 
-### Phase 1 layout
+### `E-MM1:100M` file layout
 
 ```
 encord_phase_1_dataset/
@@ -60,7 +61,7 @@ encord_phase_1_dataset/
 ```
 
 
-### How Phase-1 groups were formed
+### How `E-MM1:100M` groups were formed
 
 We started from ~6.7M captions and retrieved the top-16 nearest neighbours **per modality** for each caption.  
 Each `nn_k/data_groups.csv` contains, for every caption, the IDs of the *k-th* nearest neighbour for each modality.
@@ -82,65 +83,92 @@ To download the raw underlying data, please see the [Download page][download].
 This example constructs a DataFrame of first nearest-neighbour groups, substituting Encord IDs with file paths (Using the file structure as defined and setup in [Download][download])
 
 ```python
+import polars as pl
 import os
 from pathlib import Path
-import polars as pl
+from itertools import permutations
 
 ROOT_DATA_PATH = os.getenv("ROOT_DATA_PATH")
+MODALITIES = ["points", "audio"]
+SEP = str(Path("/"))
 
-CHOSEN_MODALIIES = ["image", "audio", "video", "points"]
+triplets_df = pl.read_csv(
+    Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "triplets.csv"
+)
 
-SEP = str(Path("/"))  
-
-nn1_groups = pl.read_csv(Path(ROOT_DATA_PATH)/ "encord_phase_1_dataset" / "nn_1" / "data_groups.csv")
-image_info = pl.read_csv(Path(ROOT_DATA_PATH)/ "encord_phase_1_dataset" / "infos" / "image.csv")
-audio_info = pl.read_csv(Path(ROOT_DATA_PATH)/ "encord_phase_1_dataset" / "infos" / "audio.csv")
-video_info = pl.read_csv(Path(ROOT_DATA_PATH)/ "encord_phase_1_dataset" / "infos" / "video.csv")
-points_info = pl.read_csv(Path(ROOT_DATA_PATH)/ "encord_phase_1_dataset" / "infos" / "points.csv")
-text_info = pl.read_csv(Path(ROOT_DATA_PATH)/ "encord_phase_1_dataset" / "infos" / "text.csv")
-
-modality_to_info = {
-  "image" : image_info,
-  "audio" : audio_info,
-  "video" : video_info,
-  "points" : points_info,
-  "text" : text_info 
+modality_to_path = {
+    "image": Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "image.csv",
+    "audio": Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "audio.csv",
+    "video": Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "video.csv",
+    "points": Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "points.csv",
 }
 
-for modality in CHOSEN_MODALIIES:
-    
-    info_df = modality_to_info[modality] 
-    info_df = info_df.with_columns(
+modality_to_info = {}
+
+for modality in MODALITIES:
+    modality_to_info[modality] = pl.read_csv(modality_to_path[modality]).with_columns(
         (
-            pl.lit(str(ROOT_DATA_PATH)) + SEP + 
-            pl.col("save_folder") + SEP + 
-            pl.lit(modality) + SEP + 
-            pl.col("file_name")
+            pl.lit(str(ROOT_DATA_PATH))
+            + SEP
+            + pl.col("save_folder")
+            + SEP
+            + pl.lit(modality)
+            + SEP
+            + pl.col("file_name")
         ).alias(f"{modality}_file_path")
     )
-    join_col = f"encord_{modality}_id"
 
-    nn1_groups = nn1_groups.join(info_df.select(
-      [
-        join_col,
-        f"{modality}_file_path"
-      ]),
-      on = join_col,
-      how = "left"
+
+modality_pairs = list(permutations(MODALITIES, 2))
+
+
+processed_triplets = []
+for mod1, mod2 in modality_pairs:
+    pair_condition = (pl.col("modality_1") == mod1) & (pl.col("modality_2") == mod2)
+
+    mod_1_mod_2_triplets = triplets_df.filter(pair_condition)
+
+    if mod_1_mod_2_triplets.height == 0:
+        continue
+
+    mod_1_info = (
+        modality_to_info[mod1]
+        .select([f"encord_{mod1}_id", f"{mod1}_file_path"])
+        .rename({f"{mod1}_file_path": "modality_1_file_path"})
     )
-nn1_groups = nn1_groups.join(text_info.select(
-  [
-    "encord_text_id",
-    "caption",
-  ]),
-  on="encord_text_id",
-  how="left"
+    mod_2_info = (
+        modality_to_info[mod2]
+        .select([f"encord_{mod2}_id", f"{mod2}_file_path"])
+        .rename({f"{mod2}_file_path": "modality_2_file_path"})
+    )
+    mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(
+        mod_1_info,
+        left_on=f"encord_modality_1_id",
+        right_on=f"encord_{mod1}_id",
+        how="left",
+    )
+    mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(
+        mod_2_info,
+        left_on=f"encord_modality_2_id",
+        right_on=f"encord_{mod2}_id",
+        how="left",
+    )
+
+    processed_triplets.append(mod_1_mod_2_triplets)
+
+output_triplets = pl.concat(processed_triplets)
+
+# optional : get captions
+text_info = pl.read_csv(
+    Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "text.csv"
 )
+text_info = text_info.select(["encord_text_id", "caption"])
+output_triplets = output_triplets.join(text_info, on="encord_text_id", how="left")
 ```
 
-## Working with the Encord Phase 2 (1M Human Annotated) Dataset
+## Working with the `E-MM1:1M` split
 
-**Whats in Phase 2?**
+**What is in `E-MM1:1M`?**
 
 - **`triplets.csv`** is in **long format**. Each row is a *triplet* that links:
   1) a **caption** (`encord_text_id`),  
@@ -157,7 +185,7 @@ nn1_groups = nn1_groups.join(text_info.select(
 - **`annotation_mapping.csv`** maps the `annotation` codes used in `triplets.csv` to human-readable labels (`1` → `Good Match`,`2` → `Partial Match`,`3` → `Bad Match`)
 
 
-### Layout
+### `E-MM1:1M` file layout
 ```
 encord_phase_2_dataset/
 ├─ infos/
@@ -171,14 +199,14 @@ encord_phase_2_dataset/
 
 ```
 
-### Column schema
+### `E-MM1:1M` column schema
 
 `triplets.csv` columns:
 
 - `encord_text_id` — ID of the caption (joins to `infos/text.csv`).
 - `modality_1` — modality of item 1 (e.g., `image`, `audio`, `video`, `points`).
 - `modality_2` — modality of item 2 (e.g., `image`, `audio`, `video`, `points`).
-- `annotated_modality` — the modality shown to annotators with the caption (usually equals `modality_2`).
+- `annotated_modality` — the modality shown to annotators with the caption.
 - `encord_{modality_1}_id` — Encord ID for item 1 (e.g., `encord_image_id` when `modality_1 == "image"`).
 - `encord_{modality_2}_id` — Encord ID for item 2 (e.g., `encord_audio_id` when `modality_2 == "audio"`).
 - `annotation` — categorical code for the label (join to `annotation_mapping.csv` for the readable value).
@@ -188,7 +216,7 @@ encord_phase_2_dataset/
 > `ROOT_DATA_PATH / save_folder / {modality} / file_name`.
 
 
-### Example: Extracting all Point-Cloud <> Audio groups from Phase 2
+### Example: Extracting all Point-Cloud ↔ Audio groups from `E-MM1:1M`
 
 **Simply change the `MODALITIES` variable to specify which modality pairs you want to extract, e.g., `['points','audio','video']` will extract all points-audio and points-video pairs that exist in the dataset. Note that only modality pairs present in the dataset will be extracted. For example as there are no audio-video pairs in the dataset, that combination will be automatically skipped.**
 ```python
