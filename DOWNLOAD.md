@@ -25,7 +25,10 @@ phase_2_only: Contains files exclusive to Phase 2
 shared: Contains files that appear in both Phase 1 and Phase 2
 The download scripts read the save_folder and file_name columns from each info dataframe to place files in the correct locations automatically. For each code chunk you need to set the ROOT_DATA_PATH and the path to your chosen infos dataframe you want to extract data from. 
 
+
 ## Infos DataFrame Schema
+
+
 Each modality (video, audio, image, points, text) has an associated `infos` dataframe that contains metadata for downloading and organizing the raw data files. All dataframes share a common schema structure with modality-specific columns for file retrieval.
 
 All dataframes have these columns:
@@ -44,6 +47,7 @@ All dataframes have these columns:
 
 
 ### Note on audio: 
+
 All audio files are stored as .mp4 video files (located in the video/ directories) due to significant overlap between video and audio datasets. The scripts will handle this automatically based on the save_folder column in your dataframes.
 
 
@@ -61,7 +65,10 @@ Instructions on how to install + ref to the original docs.
 
 # Video & Audio
 
+
 ## YouTube-based Datasets
+
+
 Download videos or audio from YouTube using yt-dlp with time-based segmentation:
 ```python
 import os
@@ -124,7 +131,11 @@ for row in df.iter_rows(named=True):
     except Exception as e:
         logger.error(f"Unexpected error downloading {row['file_name']}: {e}")
 ```
+
+
 ## VidGen-1M Videos
+
+
 
 For VidGen-1M videos start/end times are not provided. But you can download the dataset directly from HuggingFace and extract the relevant file_id entries:
 HuggingFace Dataset: `Fudan-FUXI/VIDGEN-1M`
@@ -235,7 +246,9 @@ def download_vidgen_videos():
 
 For image we need to treat each dataset differently
 
+
 ## COCO
+
 
 All images are from the COCO2017 Train subset: https://cocodataset.org/#home
 ```python
@@ -329,7 +342,11 @@ def download_coco(df):
     zip_path.unlink()
     shutil.rmtree(extract_folder)
 ```
+
+
 ## ImageNet
+
+
 
 All images can be downloaded from huggingface: https://huggingface.co/datasets/ILSVRC/imagenet-1k/
 ```python
@@ -418,7 +435,11 @@ def download_imagenet(df):
 
         print(f"Found and saved {found_count}/{len(needed_file_ids)} images")
 ```
+
+
 ## Flickr30k
+
+
 
 All images can be downloaded from huggingface: https://huggingface.co/datasets/nlphuji/flickr30k
 ```python 
@@ -490,7 +511,9 @@ for row in tqdm(flickr_df.iter_rows(named=True)):
 shutil.rmtree(extract_folder)
 ```
 
+
 ### Google Conceptual Captions (GCC) and other URL-based Image Datasets
+
 
 Download images using img2dataset:
 ```python
