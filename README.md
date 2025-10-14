@@ -239,7 +239,108 @@ output_triplets = pl.concat(processed_triplets)
 
 ## `EShot`: A Zero-Shot Benchmark for Audio <> Point Cloud
 
+A benchmark dataset for evaluating zero-shot cross-modal classification between audio and 3D point clouds.
+
 [Eval data download here](gs://ml-team-data-bucket/eshot)
+
+## Dataset Specifications
+
+- **~3,500 samples** across audio and point cloud modalities
+- **112 categories** for classification
+- **Bidirectional evaluation**: audio→points and points→audio
+
+## Directory Structure
+
+```
+eshot/
+├─ audio/ (save audio here)
+├─ point-clouds/ (save point-clouds here)
+├─ eshot_audio_info.csv
+├─ eshot_points_info.csv
+├─ category_to_point_ids.json
+├─ category_to_audio_ids.json
+
+```
+## File Descriptions
+
+### `audio/`
+Directory containing all audio files. Files are referenced by their `eshot_audio_id` from the CSV files.
+
+### `point-clouds/`
+Directory containing all point cloud files. Files are referenced by their `eshot_points_id` from the CSV files.
+
+### `eshot_audio_info.csv`
+Complete metadata for each audio sample.
+
+eshot_audio_id | youtube_id | start_time | end_time
+
+- `eshot_audio_id`: Unique identifier for the audio sample
+- `youtube_id`: Source YouTube video ID
+- `start_time`: Start timestamp of the audio clip (seconds)
+- `end_time`: End timestamp of the audio clip (seconds)
+
+### `eshot_points_info.csv`
+Complete metadata for each point cloud sample.
+
+**Schema**:
+
+eshot_point_id |  object_id
+
+- `eshot_point_id`: Unique identifier for the point cloud sample
+- `object_id`: Source 3D object identifier
+
+### `category_to_audio_ids.json`
+Maps categories to audio samples.
+
+**Schema**: `dict[str, list[int]]`
+
+
+```
+{
+  "category_name": [eshot_audio_id_1, eshot_audio_id_2, ...],
+  ...
+}
+```
+
+Each of the 112 categories maps to a list of eshot_audio_id values. This determines the class of each audio file
+
+category_to_point_ids.json
+Maps categories to point cloud samples.
+**Schema**: `dict[str, list[int]]`
+
+
+```{
+  "category_name": [eshot_point_id_1, eshot_point_id_2, ...],
+  ...
+}
+```
+
+Each of the 112 categories maps to a list of eshot_point_id values. This determines the class of each point cloud.
+
+### Evaluation Protocol
+
+Zero-shot classification using embedding models:
+
+
+* Embed all samples in both modalities using your model
+
+* For each category, create a class vector from the opposing modality:
+
+* Compute mean of all embeddings in that category
+
+* Normalize to unit length
+
+* Classify test samples by nearest class vector
+
+
+
+## Example 
+
+
+```python
+felix write example code here
+```
+
 
 ...
 
