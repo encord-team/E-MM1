@@ -33,7 +33,7 @@ Each modality (video, audio, image, points, text) has an associated `infos` data
 
 All dataframes have these columns:
 
-`encord_{modality}_id | source_dataset | dataset_license | [modality_specific_columns] | file_name | save_folder`
+`encord_{modality}_id` | `source_dataset` | `dataset_license` | `[modality_specific_columns]` | `file_name` | `save_folder`
 
 ### Universal Columns (All Modalities)
 
