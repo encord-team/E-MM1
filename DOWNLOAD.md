@@ -1,11 +1,7 @@
 # Data Download Guide
 This guide provides code to download all raw data files from the various source datasets used in this project. The download scripts utilize the metadata in the infos dataframes 
 (located at `/encord_phase_1_dataset/infos/` and `/encord_phase_2_dataset/infos/`) to automatically organize files into the appropriate directory structure.
-
-
-### Repository Structure
-
-
+Repository Structure
 All downloaded files are organized into the following structure under your ROOT_DATA_PATH:
 
 ```
@@ -25,15 +21,9 @@ ROOT_FOLDER/
 ```
 
 phase_1_only: Contains files exclusive to Phase 1
-
-
 phase_2_only: Contains files exclusive to Phase 2
-
-
 shared: Contains files that appear in both Phase 1 and Phase 2
-
-
-The download scripts read the save_folder and file_name columns from each info dataframe to place files in the correct locations automatically. For each code chunk you need to set the ROOT_DATA_PATH and the path to your chosen infos dataframe you want to extract data from. 
+The download scripts read the save_folder and file_name columns from each info dataframe to place files in the correct locations automatically. For each code chunk, you need to set the ROOT_DATA_PATH and the path to your chosen infos dataframe that you want to extract data from. 
 
 
 ## Infos DataFrame Schema
@@ -69,6 +59,7 @@ export ROOT_DATA_PATH=/path/to/ml-data/data
 img2dataset
 yt-dlp
 huggingface_hub
+polars
 ```
 
 Instructions on how to install + ref to the original docs.
@@ -97,13 +88,11 @@ logger = logging.getLogger(__name__)
 
 
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
-DF_PATH = 'path/to/your/info/df.csv'  # Change this to the phase {1,2} {audio,video} df path 
+DF_PATH = 'path/to/your/info/df.csv'  # Change this to the phase {1,2} {audio,video} df path e.g: `/infos/audio.csv`
 
-
+# Load and filter out datasets with no start/end times provided
 df = pl.read_csv(DF_PATH) 
-
-# VidGen-1M does not provide start/end times of video clips so we have to filter these out and download them separately (method given below)
-df = df.filter(pl.col('source_dataset') != 'VidGen-1M')
+df = df.filter(pl.col('source_dataset') != 'VidGen-1M') # VidGen uses the entire video so we will download the video separately in entirety
 
 # Download videos/audio
 for row in df.iter_rows(named=True):
@@ -143,7 +132,7 @@ for row in df.iter_rows(named=True):
     except Exception as e:
         logger.error(f"Unexpected error downloading {row['file_name']}: {e}")
 ```
-
+<!-- Tested to work -->
 
 ## VidGen-1M Videos
 
@@ -151,8 +140,6 @@ for row in df.iter_rows(named=True):
 
 For VidGen-1M videos start/end times are not provided. But you can download the dataset directly from HuggingFace and extract the relevant file_id entries:
 HuggingFace Dataset: `Fudan-FUXI/VIDGEN-1M`
-
-
 ```python
 import os
 import polars as pl
@@ -252,8 +239,11 @@ def download_vidgen_videos():
     logger.info(f"Complete! Found {videos_found}/{len(vidgen_df)} videos")
     if len(needed_file_ids) > 0:
         logger.warning(f"Missing {len(needed_file_ids)} videos: {needed_file_ids}")
-```
 
+if __name__ == "__main__":
+    download_vidgen_videos()
+```
+<!-- Tested to work -->
 # Image
 
 For image we need to treat each dataset differently
@@ -264,6 +254,7 @@ For image we need to treat each dataset differently
 
 All images are from the COCO2017 Train subset: https://cocodataset.org/#home
 ```python
+import os   
 import polars as pl
 from pathlib import Path
 import requests
@@ -362,9 +353,10 @@ def download_coco(df):
 
 All images can be downloaded from huggingface: https://huggingface.co/datasets/ILSVRC/imagenet-1k/
 ```python
+import os
 import polars as pl
 from pathlib import Path
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download, list_repo_files
 from pathlib import Path
 import polars as pl
 from tqdm import tqdm
@@ -419,7 +411,7 @@ def download_imagenet(df):
 
         for row in tqdm(parquet_df.iter_rows(named=True), desc="Processing images"):  
 
-            im_id = row['image'].filename.replace('.JPEG', '')
+            im_id = row['image']['path'].replace('.JPEG', '')
             
          
             if im_id in needed_file_ids:
@@ -447,7 +439,7 @@ def download_imagenet(df):
 
         print(f"Found and saved {found_count}/{len(needed_file_ids)} images")
 ```
-
+<!-- Tested to work -->
 
 ## Flickr30k
 
@@ -461,12 +453,13 @@ import zipfile
 from pathlib import Path
 import shutil
 from tqdm import tqdm
-import shutil
 
 
 
-DF_PATH = '/path/to/image/df'
+DF_PATH = '/lambda/nfs/ml-data/data/felix/encord_phase_1_dataset/infos/image.csv' # '/path/to/image/df'
+df = pl.read_csv(DF_PATH)
 
+df = df.head(10)
 
 print("Downloading Flickr30k images...")
 zip_path = hf_hub_download(
@@ -494,7 +487,7 @@ else:
 print(f"Images extracted to: {image_source_folder}")
 
 #
-flickr_df = df.filter(pl.col('dataset') == 'Flickr30k')
+flickr_df = df.filter(pl.col('source_dataset') == 'Flickr30k')
 print(f"Found {len(flickr_df)} Flickr30k images to process")
 
 print("Copying images...")
@@ -542,17 +535,18 @@ PROCESSES_COUNT = 16
 THREAD_COUNT = 64
 RESIZE_MODE = 'no'
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
-DF_PATH = '/path/to/image/df'
+DF_PATH = '/lambda/nfs/ml-data/data/felix/encord_phase_1_dataset/infos/image.csv'
 
 #STEP 1: DOWNLOAD WITH IMG2DATASET 
 print("Loading dataframe...")
 df = pl.read_csv(DF_PATH)
 df = df.filter(pl.col('source_dataset') == 'Google Conceptual Captions')
+df = df.head()
 
 
 with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as temp_file:
     temp_path = temp_file.name
-    df.select(['file_id', 'encord_image_id', 'save_folder']).rename({"file_id":"url"}).write_csv(temp_path)
+    df.select(['file_id', 'file_name', 'save_folder']).rename({"file_id":"url"}).write_csv(temp_path)
 
 
 output_dir = Path(ROOT_DATA_PATH) / 'gcc_downloads'
@@ -567,7 +561,7 @@ img2dataset --url_list {temp_path} \\
     --processes_count {PROCESSES_COUNT} \\
     --thread_count {THREAD_COUNT} \\
     --resize_mode {RESIZE_MODE} \\
-    --save_additional_columns '["encord_image_id","save_folder"]' \\
+    --save_additional_columns '["file_name","save_folder"]' \\
     --enable_wandb False
 """)
 
@@ -589,36 +583,42 @@ for json_file in tqdm(json_files, desc="Reorganizing"):
         
         img_file = json_file.with_suffix('.jpg')
         
-        if img_file.exists() and meta.get('encord_image_id') and meta.get('save_folder'):
+        if img_file.exists() and meta.get('file_name') and meta.get('save_folder'):
             target_dir = organized_dir / meta['save_folder'] / 'image'
             target_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(img_file, target_dir / f"{meta['encord_image_id']}.png")
+            shutil.copy2(img_file, target_dir / f"{meta['file_name']}")
             moved += 1
         else:
             errors += 1
     except Exception as e:
+        print(e)
         errors += 1
 
 print(f"\nComplete! Moved: {moved}, Errors: {errors}")
 ```
+<!-- Checked to be okay -->
 
 # Points
 
-All point clouds are available to download from OpenShape on huggingface: https://huggingface.co/datasets/OpenShape/openshape-training-data/tree/main 
+all point clouds are available to download from OpenShape on huggingface: https://huggingface.co/datasets/OpenShape/openshape-training-data/tree/main 
 Files can be identified using the file_id column in infos/points.csv
 
 ```python
 import polars as pl
 from pathlib import Path
+import os
 from huggingface_hub import hf_hub_download
 import tarfile
 import shutil
 from tqdm import tqdm
 
+ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
 REPO_ID = "OpenShape/openshape-training-data"
-DF_PATH = 'path/to/your/points/df.csv
+DF_PATH = '/lambda/nfs/ml-data/data/felix/encord_phase_1_dataset/infos/points.csv'
 
 df = pl.read_csv(DF_PATH)
+
+df = df.head(100)
 ROOT_DATASETS = {
     '3D-FUTURE': '3D-FUTURE.tar.gz',
     'ABO': 'ABO.tar.gz',
@@ -626,7 +626,6 @@ ROOT_DATASETS = {
 }
 
 def process_tar(tar_filename, dataset_df):
-
     if len(dataset_df) == 0:
         return
     
@@ -636,7 +635,9 @@ def process_tar(tar_filename, dataset_df):
     file_id_to_folder = {row['file_id']: row['save_folder'] 
                          for row in dataset_df.iter_rows(named=True)}
     
+    print(f"Downloading {REPO_ID}/{tar_filename}...")
     tar_path = hf_hub_download(repo_id=REPO_ID, filename=tar_filename, repo_type="dataset")
+    print(f"Downloaded {REPO_ID}/{tar_filename}")
     found = 0
     
     with tarfile.open(tar_path, 'r:gz') as tar:
@@ -658,37 +659,37 @@ for dataset_name, tar_filename in ROOT_DATASETS.items():
     process_tar(tar_filename, df)
 
 # Process Objaverse (000-000.tar.gz to 000-159.tar.gz)
-objaverse_df = df.filter(pl.col('dataset') == 'Objaverse')
-if len(objaverse_df) > 0:
-    print(f"\nProcessing Objaverse ({len(objaverse_df)} files needed)...")
-    file_id_to_folder = {row['file_id']: row['save_folder'] 
-                         for row in objaverse_df.iter_rows(named=True)}
-    found = 0
-    
-    for i in tqdm(range(160), desc="Objaverse tars"):
-        try:
-            tar_path = hf_hub_download(repo_id=REPO_ID, filename=f"Objaverse/000-{i:03d}.tar.gz", repo_type="dataset")
-            
-            with tarfile.open(tar_path, 'r:gz') as tar:
-                for member in tar.getmembers():
-                    if member.isfile() and member.name.endswith('.npy'):
-                        file_id = Path(member.name).stem
-                        if file_id in file_id_to_folder:
-                            target_path = Path(ROOT_DATA_PATH , file_id_to_folder[file_id] ,'points', f"{file_id}.npy")
-                            target_path.parent.mkdir(parents=True, exist_ok=True)
-                            
-                            with tar.extractfile(member) as source, open(target_path, 'wb') as target:
-                                shutil.copyfileobj(source, target)
-                            found += 1
-            
-            if found == len(objaverse_df):
-                print(f"All files found! Stopping at tar 000-{i:03d}.")
-                break
-        except Exception as e:
-            print(f"Error with tar 000-{i:03d}: {e}")
+
+print(f"\nProcessing Objaverse ({len(df)} files needed)...")
+file_id_to_folder = {row['file_id']: row['save_folder'] 
+                        for row in df.iter_rows(named=True)}
+found = 0
+N_OBJAVERSE_TARS = 160
+for i in tqdm(range(N_OBJAVERSE_TARS), desc="Objaverse tars"):
+    try:
+        tar_path = hf_hub_download(repo_id=REPO_ID, filename=f"Objaverse/000-{i:03d}.tar.gz", repo_type="dataset")
+        
+        with tarfile.open(tar_path, 'r:gz') as tar:
+            for member in tar.getmembers():
+                if member.isfile() and member.name.endswith('.npy'):
+                    file_id = Path(member.name).stem
+                    if file_id in file_id_to_folder:
+                        target_path = Path(ROOT_DATA_PATH , file_id_to_folder[file_id] ,'points', f"{file_id}.npy")
+                        target_path.parent.mkdir(parents=True, exist_ok=True)
+                        
+                        with tar.extractfile(member) as source, open(target_path, 'wb') as target:
+                            shutil.copyfileobj(source, target)
+                        found += 1
+        
+        if found == len(df):
+            print(f"All files found! Stopping at tar 000-{i:03d}.")
+            break
+    except Exception as e:
+        print(f"Error with tar 000-{i:03d}: {e}")
 
 print("\nAll datasets processed!")
 ```
+<!-- Checked to be okay -->
 ## Captions
 
 All captions are available in the 'caption' column in infos/text.csv

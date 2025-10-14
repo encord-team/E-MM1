@@ -372,17 +372,17 @@ felix write example code here
 
 ### Felix currently working on
 
-- [ ] Add `filename` to infors csv.
-- [ ] Felix find Start+End time for VidGen
-- [ ] Split 100M into 16 shards.
+- [-] Add `filename` to infors csv.
+- [-] Felix find Start+End time for VidGen
+- [-] Split 100M into 16 shards.
 - [ ] Put files on LFS when finalized
-- [ ] Eval code for EShot
+- [ ] Eval data / code for EShot
 
 ### Other stuff that needs to happen
 
 - [ ] Prose
-  - [ ] Dataset attribution
-  - [ ] Download instructions
+  - [-] Dataset attribution
+  - [-] Download instructions. Needs fixing + testing
   - [ ] Main README describe how to use the csv files:
     - lfs usage
     - join tables to get info you need. Make many use-cases
