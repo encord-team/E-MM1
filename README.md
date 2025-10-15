@@ -578,6 +578,7 @@ for i, category in enumerate(sorted_categories):
 ```
 Prints the class by class zero shot performance.
 
+```
 ============================================================
 Category: airplane
 ============================================================
@@ -601,8 +602,8 @@ Category: anatomical_heart
 [Points → Audio Classification]
   Top-1 Accuracy: 1.0000 (7/7 correct)
   Top-5 Accuracy: 1.0000 (7/7 correct)
-
 ...
+```
 
 ## What's Coming?
 
