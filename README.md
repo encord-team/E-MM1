@@ -308,12 +308,12 @@ for mod1, mod2 in modality_pairs:
     mod_1_info = (
         modality_to_info[mod1]
         .select([f"encord_{mod1}_id", f"{mod1}_file_path"])
-        .rename({f"{mod1}_file_path": "modality_1_file_path"})
+        .rename({f"{mod1}_file_path": "paired_modality_file_path"})
     )
     mod_2_info = (
         modality_to_info[mod2]
         .select([f"encord_{mod2}_id", f"{mod2}_file_path"])
-        .rename({f"{mod2}_file_path": "modality_2_file_path"})
+        .rename({f"{mod2}_file_path": "annotated_modality_file_path"})
     )
     mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(
         mod_1_info,
@@ -344,7 +344,7 @@ print(output_triplets)
 shape: (144_465, 9)
 
 
-| encord_text_id | paired_modality | annotated_modality | encord_paired_id | ... | annotation | modality_1_file_path | modality_2_file_path | caption |
+| encord_text_id | paired_modality | annotated_modality | encord_paired_id | ... | annotation | paired_modality_file_path | annotated_modality_file_path | caption |
 |----------------|-----------------|--------------------|--------------------|-----|------------|----------------------|----------------------|---------|
 | 296025 | points | audio | 158492 | ... | 3 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Burping then clicking and gurg… |
 | 296025 | points | audio | 158492 | ... | 3 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Burping then clicking and gurg… |
@@ -399,7 +399,8 @@ Complete metadata for each audio sample.
 | `youtube_id`     | String   | Source YouTube video ID                     |
 | `start_time`     | Integer  | Start timestamp of the audio clip (seconds) |
 | `end_time`       | Integer  | End timestamp of the audio clip (seconds)   |
-
+| `file_name`      | String   | Filename of the asset                       |
+| `save_folder`    | String   | Relative folder under your chosen root where the asset is | 
 #### `eshot_points_info.csv`
 
 Complete metadata for each point cloud sample.
@@ -409,7 +410,9 @@ Complete metadata for each point cloud sample.
 | **Columns**      | **Type** | **Description**                              |
 | :--------------- | :------- | :------------------------------------------- |
 | `eshot_point_id` | Integer  | Unique identifier for the point cloud sample |
-| `object_id`      | String   | Source 3D object identifier (Objaverse ID)   |
+| `file_id`      | String   | Source 3D object identifier (Objaverse ID)   |
+| `file_name`      | String   | Filename of the asset                       |
+| `save_folder`    | String   | Relative folder under your chosen root where the asset is | 
 
 
 
