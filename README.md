@@ -297,7 +297,7 @@ modality_pairs = list(permutations(MODALITIES, 2))
 processed_triplets = []
 for mod1, mod2 in modality_pairs:
     # Need to check both directions
-    # As we paired Audio with Image and Image wiht Audio
+    # As we paired Audio with Image and Image with Audio
     pair_condition = (pl.col("paired_modality") == mod1) & (pl.col("annotated_modality") == mod2)
 
     mod_1_mod_2_triplets = triplets_df.filter(pair_condition)
