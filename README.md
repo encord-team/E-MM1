@@ -61,7 +61,7 @@ encord_phase_1_dataset/
 └─ data_groups.csv
 ```
 
-> 💡 Note: the CSV files are rather big. Therefore we use `git lfs` to store the large files. Therefor, you have to add a few additional commands when you clone.
+> 💡 Note: the CSV files are rather big (just `nn_1/data_groups.csv` is 252MB with total size: ~7GB). Therefore we use `git lfs` to store the large files. Therefore, you will have to add a few additional commands when you clone.
 > As an example, if you just want the nearest neighbour for each caption, run the following commands:
 >
 > ```
@@ -109,6 +109,7 @@ CHOSEN_MODALIIES = ["image", "audio", "video", "points"]
 
 SEP = str(Path("/"))
 
+# Load in the groupings and the source files for each modality
 nn1_groups = pl.read_csv(
     Path(ROOT_DATA_PATH) / "encord_phase_1_dataset" / "nn_1" / "data_groups.csv"
 )
@@ -138,6 +139,7 @@ modality_to_info = {
 
 for modality in CHOSEN_MODALIIES:
     info_df = modality_to_info[modality]
+    # Build the path to the underlying data item
     info_df = info_df.with_columns(
         (
             pl.lit(str(ROOT_DATA_PATH))
@@ -151,9 +153,12 @@ for modality in CHOSEN_MODALIIES:
     )
     join_col = f"encord_{modality}_id"
 
+    # Join the modality file paths onto the groups dataframe
     nn1_groups = nn1_groups.join(
         info_df.select([join_col, f"{modality}_file_path"]), on=join_col, how="left"
     )
+
+# Join the text caption onto the groups dataframe
 nn1_groups = nn1_groups.join(
     text_info.select(
         [
@@ -164,32 +169,46 @@ nn1_groups = nn1_groups.join(
     on="encord_text_id",
     how="left",
 )
-
+print(nn1_groups.columns) # ['encord_text_id', 'encord_video_id', 'encord_audio_id', 'encord_image_id', 'encord_points_id', 'nn_index', 'image_file_path', 'audio_file_path', 'video_file_path', 'points_file_path']
+print(nn1_groups)
 ```
+(6_706_765, 10)
+| encord_text_id | encord_video_id | encord_audio_id | encord_image_id | ... | image_file_path | audio_file_path | video_file_path | points_file_path |
+|----------------|-----------------|-----------------|-----------------|-----|-----------------|-----------------|-----------------|------------------|
+| 0 | 29269 | 1904273 | 1744720 | ... | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… |
+| 1 | 768099 | 1194855 | 345694 | ... | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… |
+| 2 | 3573647 | 780920 | 1592744 | ... | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… |
+| 3 | 1224575 | 1876844 | 83841 | ... | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… |
+| 4 | 3731721 | 2110469 | 1459676 | ... | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… |
+| ... | ... | ... | ... | ... | ... | ... | ... | ... |
+| 8134016 | 2102623 | 923473 | 2895240 | ... | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… |
+| 8134017 | 206728 | 796474 | 1302751 | ... | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… |
+| 8134018 | 1738048 | 1487259 | 2847142 | ... | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… |
+| 8134019 | 3253932 | 455813 | 1314353 | ... | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… |
+| 8134020 | 2494438 | 2025372 | 2740332 | ... | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… |
 
-`TODO FELIX` Please add a print statement and an example table of what's then in this final data frame
 
 ## Working with the `E-MM1:1M` split
 
+The E-MM1 annotations were designed to build pairings between 2 non-text modalities. To that end, we worked with captioned base modality examples as discussed in the [technical report][paper].
+This gave us triplets of data pairing base text captions and paired modality, annotated modality items. We paired: (Audio, Points), (Image, Points), (Video, Points) and (Audio, Image).
+
 **What is in `E-MM1:1M`?**
 
-`TODO FELIX` Please write this section in your own words (like for e-mm1:100m) as rn it sounds like LLM
+### `triplets.csv`:
 
-- **`triplets.csv`** is in **long format**. Each row is a _triplet_ that links:
+Desribes the annotation pairings used to build multi-modal pairings. Includes hard negatives also
 
-  1. a **caption** (`encord_text_id`),
-  2. a **modality_1 item**, and
-  3. a **modality_2 item**,  
-     along with an **annotation** describing how well the caption matches the modality_2 candidate.
+#### Example:
 
-- **How triplets were created:**  
-  We started from datasets of _(caption, modality_1)_ pairs. Annotators were shown the **caption** and a **candidate modality_2 item** and asked to label the pairing as:
+| encord_text_id | paired_modality | annotated_modality | encord_paired_id | encord_annotated_id | annotation |
+|----------------|------------|--------------|----------------|----------------------|------------|
+| 124188 | audio | image | 36699 | 80177 | 2 |
 
-  - **Good Match**
-  - **Partial Match**
-  - **No Match**
 
-- **`annotation_mapping.csv`** maps the `annotation` codes used in `triplets.csv` to human-readable labels (`1` → `Good Match`,`2` → `Partial Match`,`3` → `Bad Match`)
+- **`annotation_mapping.csv`** maps the `annotation` codes used in `triplets.csv` to human-readable labels
+
+ (`1` → `Good Match`,`2` → `Partial Match`,`3` → `Bad Match`)
 
 ### `E-MM1:1M` file layout
 
@@ -213,12 +232,11 @@ encord_phase_2_dataset/
 | **Column**               | **Type** | **Description**                                                                          |
 | :----------------------- | :------- | :--------------------------------------------------------------------------------------- |
 | `encord_text_id`         | Integer  | ID of the caption (joins to `infos/text.csv`)                                            |
-| `modality_1`             | String   | modality of item 1 (e.g., `image`, `audio`, `video`, `points`)                           |
-| `modality_2`             | String   | modality of item 2 (e.g., `image`, `audio`, `video`, `points`)                           |
-| `annotated_modality`     | String   | the modality shown to annotators with the caption                                        |
-| `encord_{modality_1}_id` | Integer  | Encord ID for item 1 (e.g., `encord_image_id` when `modality_1 == "image"`)              |
-| `encord_{modality_2}_id` | Integer  | Encord ID for item 2 (e.g., `encord_audio_id` when `modality_2 == "audio"`)              |
-| `annotation`             | Integer  | categorical code for the label (join to `annotation_mapping.csv` for the readable value) |
+| `paired_modality`             | String   | Modality of the pair associated to the caption (e.g: for a COCO caption, `paired_modality` would be image.)                           |
+| `annotated_modality`             | String   | Modality of the annotated candidate (e.g., `image`, `audio`, `video`, `points`, != `paired_modality` )                           |
+| `encord_paired_id` | Integer  | Encord ID for paired item
+| `encord_annotated_id` | Integer  | Encord ID for annotated item
+| `annotation`             | Integer  | categorical code for the label |
 
 > The `infos/*.csv` files share the same conventions as for `E-MM1:100M`: each contains
 > `encord_{modality}_id`, `save_folder`, and `file_name`. Follow [the download instructions][download] to build file paths as:  
@@ -226,11 +244,11 @@ encord_phase_2_dataset/
 
 ### Example: Extracting all Point-Cloud ↔ Audio groups from `E-MM1:1M`
 
-`TODO FELIX` Please add a description here of what the example does.
+The below script loads up the triplets from `/ "encord_phase_2_dataset" / "triplets.csv"`. We then will further filter the triplets CSV to include only pairs from data from the modalities that we care about. We further optionally include the caption pairing the two base items
 
 > 💡 Change the `MODALITIES` variable to specify which modality pairs you want to extract, e.g., `['points','audio','video']` will extract all points-audio and points-video pairs that exist in the dataset. Note that only modality pairs present in the dataset will be extracted. For example, as there are no audio-video pairs in the dataset, that combination will be skipped.\*\*
 
-Before running the example, make sure you have pulled the csv files from `lsf`:
+Before running the example, make sure you have pulled the csv files from `lfs`:
 
 ```shell
 git lfs pull --include="datasets/e-mm1_1m/**/*.csv"
@@ -278,7 +296,9 @@ modality_pairs = list(permutations(MODALITIES, 2))
 
 processed_triplets = []
 for mod1, mod2 in modality_pairs:
-    pair_condition = (pl.col("modality_1") == mod1) & (pl.col("modality_2") == mod2)
+    # Need to check both directions
+    # As we paired Audio with Image and Image wiht Audio
+    pair_condition = (pl.col("paired_modality") == mod1) & (pl.col("annotated_modality") == mod2)
 
     mod_1_mod_2_triplets = triplets_df.filter(pair_condition)
 
@@ -297,13 +317,13 @@ for mod1, mod2 in modality_pairs:
     )
     mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(
         mod_1_info,
-        left_on=f"encord_modality_1_id",
+        left_on=f"encord_paired_id",
         right_on=f"encord_{mod1}_id",
         how="left",
     )
     mod_1_mod_2_triplets = mod_1_mod_2_triplets.join(
         mod_2_info,
-        left_on=f"encord_modality_2_id",
+        left_on=f"encord_annotated_id",
         right_on=f"encord_{mod2}_id",
         how="left",
     )
@@ -318,9 +338,25 @@ text_info = pl.read_csv(
 )
 text_info = text_info.select(["encord_text_id", "caption"])
 output_triplets = output_triplets.join(text_info, on="encord_text_id", how="left")
+print(output_triplets.columns) # ['encord_text_id', 'paired_modality', 'annotated_modality', 'encord_paired_id', 'encord_annotated_id', 'annotation', 'modality_1_file_path', 'modality_2_file_path', 'caption']
+print(output_triplets)
 ```
+shape: (144_465, 9)
 
-`TODO FELIX` Please add a print statement and an example table of what's then in this final data frame
+
+| encord_text_id | paired_modality | annotated_modality | encord_paired_id | ... | annotation | modality_1_file_path | modality_2_file_path | caption |
+|----------------|-----------------|--------------------|--------------------|-----|------------|----------------------|----------------------|---------|
+| 296025 | points | audio | 158492 | ... | 3 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Burping then clicking and gurg… |
+| 296025 | points | audio | 158492 | ... | 3 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Burping then clicking and gurg… |
+| 302072 | points | audio | 5089 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Motorcycle engine starting and… |
+| 309634 | points | audio | 156433 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Water is splashing, the wind i… |
+| 309634 | points | audio | 156433 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Water is splashing, the wind i… |
+| ... | ... | ... | ... | ... | ... | ... | ... | ... |
+| 308950 | points | audio | 11735 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Vehicle running lightly with m… |
+| 282301 | points | audio | 79560 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | A dog is whimpering, followed … |
+| 282301 | points | audio | 79560 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | A dog is whimpering, followed … |
+| 301969 | points | audio | 36034 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Motor revving with a squeaky b… |
+| 301969 | points | audio | 36034 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Motor revving with a squeaky b… |
 
 ## `EShot`: A Zero-Shot Benchmark for Audio ↔ Point Cloud
 
@@ -361,8 +397,8 @@ Complete metadata for each audio sample.
 | :--------------- | :------- | :------------------------------------------ |
 | `eshot_audio_id` | Integer  | Unique identifier for the audio sample      |
 | `youtube_id`     | String   | Source YouTube video ID                     |
-| `start_time`     | TODO     | Start timestamp of the audio clip (seconds) |
-| `end_time`       | TODO     | End timestamp of the audio clip (seconds)   |
+| `start_time`     | Integer  | Start timestamp of the audio clip (seconds) |
+| `end_time`       | Integer  | End timestamp of the audio clip (seconds)   |
 
 #### `eshot_points_info.csv`
 
@@ -372,8 +408,10 @@ Complete metadata for each point cloud sample.
 
 | **Columns**      | **Type** | **Description**                              |
 | :--------------- | :------- | :------------------------------------------- |
-| `eshot_point_id` |          | Unique identifier for the point cloud sample |
-| `object_id`      |          | Source 3D object identifier                  |
+| `eshot_point_id` | Integer  | Unique identifier for the point cloud sample |
+| `object_id`      | String   | Source 3D object identifier (Objaverse ID)   |
+
+
 
 #### `category_to_audio_ids.json`
 
@@ -544,6 +582,9 @@ for i, category in enumerate(sorted_categories):
 - [ ] We will publish a model with weights that was trained on the dataset. The model can embed all five modalities into a unified embedding space.
 - [ ] We will publish pre-computed embeddings used to build the dataset.
 
+
+Please do reach out to the team at ml@encord.com for any enqueries or to show off any cool applications of the dataset!
+
 # TODO
 
 `FELIX TODO` REMOVE
@@ -565,8 +606,6 @@ for i, category in enumerate(sorted_categories):
   - [x] Main README describe how to use the csv files:
     - [x] lfs usage
     - join tables to get info you need. Make many use-cases
-  - [ ] Add contact info (ml@encord.com) or whatever
-  - [Mavis] Banner?
   - [ ] Main README polish
 - [ ] At the end, clean up, squash, force push.
 
