@@ -433,8 +433,8 @@ def make_class_embedding(x: np.ndarray):
     return x
 
 
-audio_info = pl.read_csv("data/eshot/eshot_audio_info.csv")
-points_info = pl.read_csv("data/eshot/eshot_audio_info.csv")
+audio_info = pl.read_csv(Path(ROOT_DATA_PATH) / "eshot" / "eshot_audio_info.csv")
+points_info = pl.read_csv(Path(ROOT_DATA_PATH) / "eshot" / "eshot_points_info.csv")
 
 with open("data/eshot/category_to_point_ids.json", "r") as f:
     category_to_point_ids = json.load(f)
@@ -453,7 +453,7 @@ audio_id_to_index = {
 }
 
 points_file_paths = [
-    Path(ROOT_DATA_PATH, "eshot", "audio", file_name)
+    Path(ROOT_DATA_PATH, "eshot", "points", file_name)
     for file_name in points_info["file_name"]
 ]
 

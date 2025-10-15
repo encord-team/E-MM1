@@ -1,17 +1,17 @@
 # Data Download Guide
 
 This guide provides code to download all raw data files from the various source datasets used in this project. The download scripts utilize the metadata in the infos dataframes
-(located at `/encord_phase_1_dataset/infos/` and `/encord_phase_2_dataset/infos/`) to automatically organize files into the appropriate directory structure.
+(located at `./datasets/e-mm1_100m/infos/` and `./datasets/e-mm1_1m/infos/` and `./datasets/eshot`) to automatically organize files into the appropriate directory structure.
 Repository Structure
 All downloaded files are organized into the following structure under your ROOT_DATA_PATH:
 
 ```
 ROOT_FOLDER/
-├── phase_1_only/
+├── e-mm1_100m_only/
 │   ├── image/
 │   ├── video/
 │   └── points/
-├── phase_2_only/
+├── e-mm1_1m_only/
 │   ├── image/
 │   ├── video/
 │   └── points/
@@ -21,8 +21,8 @@ ROOT_FOLDER/
     └── points/
 ```
 
-`phase_1_only`: Contains files exclusive to `E-MM1:100M`
-`phase_2_only`: Contains files exclusive to `E-MM1:1M`
+`e-mm1_100m_only`: Contains files exclusive to `E-MM1:100M`
+`e-mm1_1m_only`: Contains files exclusive to `E-MM1:1M`
 `shared`: Contains files that appear in both `E-MM1:100M` and `E-MM1:1M`
 The download scripts read the save_folder and file_name columns from each info dataframe to place files in the correct locations automatically. For each code chunk, you need to set the ROOT_DATA_PATH and the path to your chosen infos dataframe that you want to extract data from.
 
@@ -36,13 +36,13 @@ All dataframes have these columns:
 
 ### Universal Columns (All Modalities)
 
-| Column                 | Type    | Description                                                                                               |
-| ---------------------- | ------- | --------------------------------------------------------------------------------------------------------- |
-| `encord_{modality}_id` | Integer | Unique identifier for the data item within the Encord system (e.g., `encord_video_id`, `encord_image_id`) |
-| `source_dataset`       | String  | Name of the original dataset from which this data item was sourced (e.g., "Valor", "COCO", "AudioSet")    |
-| `dataset_license`      | String  | License type of the source dataset (e.g., "MIT", "CC-BY", "Apache-2.0")                                   |
-| `file_name`            | String  | Name of the file to be saved locally (e.g., `4Df6eeR64Ow_14.mp4`)                                         |
-| `save_folder`          | String  | Target directory for organizing files. One of: `phase_1_only`, `phase_2_only`, or `shared`                |
+| Column                 | Type    | Description                                                                                             |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------- |
+| `encord_{modality}_id` | Integer | Identifier unique to each (dataset, modality) pair (e.g., `encord_video_id` in `E-MM1_1M`) |
+| `source_dataset`       | String  | Name of the original dataset from which this data item was sourced (e.g., "Valor", "COCO", "AudioSet")  |
+| `dataset_license`      | String  | License type of the source dataset (e.g., "MIT", "CC-BY", "Apache-2.0")                                 |
+| `file_name`            | String  | Name of the file to be saved locally (e.g., `4Df6eeR64Ow_14.mp4`)                                       |
+| `save_folder`          | String  | Target directory for organizing files. One of: `e-mm1_100m_only`, `e-mm1_1m_only`, or `shared`               |
 
 ### Note on audio:
 
@@ -60,6 +60,8 @@ uv sync
 # Video & Audio
 
 ## YouTube-based Datasets
+
+### YouTube - based Datasets for E-MM1_1M and E-MM1_100M 
 
 Download videos or audio from YouTube using yt-dlp with time-based segmentation:
 Note: We include this as a representative example of how to download videos but for bulk-downloading **All** videos, we would encourage people to look elsewhere for more robust `yt-dlp` based solutions
@@ -81,11 +83,12 @@ logger = logging.getLogger(__name__)
 
 
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
-DF_PATH = 'path/to/your/info/df.csv'  # Change this to the phase {1,2} {audio,video} df path e.g: `/infos/audio.csv`
+# Change this to the {audio,video} df path for e-mm1_100m or e-mm1_1m
+DF_PATH = 'path/to/your/info/df.csv'  
 
 # Load and filter out datasets with no start/end times provided
 df = pl.read_csv(DF_PATH)
-df = df.filter(pl.col('source_dataset') != 'VidGen-1M') # VidGen uses the entire video so we will download the video separately in entirety
+df = df.filter(pl.col('source_dataset') != 'VidGen-1M') 
 
 # Download videos/audio
 for row in df.iter_rows(named=True):
@@ -95,6 +98,70 @@ for row in df.iter_rows(named=True):
     output_path = output_dir / row['file_name']
 
     # Skip if exists
+    if output_path.exists():
+        continue
+
+    ytid = row["youtube_id"]
+    start_time = row["start_time"]
+    end_time = row["end_time"]
+
+    cmd = [
+        'yt-dlp',
+        f'https://www.youtube.com/watch?v={ytid}',
+        # You may need to pass cookies in
+        '--download-sections', f'*{start_time}-{end_time}',
+        '-o', str(output_path),
+    ]
+
+    try:
+        result = subprocess.run(
+            cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        logger.info(f"Successfully downloaded {row['file_name']}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to download {row['file_name']}: {e.stderr}")
+    except subprocess.TimeoutExpired:
+        logger.error(f"Download timed out for {row['file_name']}")
+    except Exception as e:
+        logger.error(f"Unexpected error downloading {row['file_name']}: {e}")
+```
+
+### YouTube - based Datasets for EShot
+
+```python
+import os
+import subprocess
+import polars as pl
+import yt_dlp
+import logging
+from pathlib import Path
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
+ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
+DF_PATH = 'path/to/eshot/audio/info/df.csv' 
+
+
+df = pl.read_csv(DF_PATH)
+
+
+for row in df.iter_rows(named=True):
+ 
+    output_dir = Path(ROOT_DATA_PATH) / row['save_folder'] / 'audio'
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / row['file_name']
+
+
     if output_path.exists():
         continue
 
@@ -585,7 +652,12 @@ print(f"\nComplete! Moved: {moved}, Errors: {errors}")
 # Points
 
 all point clouds are available to download from OpenShape on huggingface: https://huggingface.co/datasets/OpenShape/openshape-training-data/tree/main
+
+As this is a large dataset, we recommend extracting all needed point clouds for E-MM1_100m,E-MM1_1M and EShot at the same time.
+
 Files can be identified using the file_id column in infos/points.csv
+
+T
 
 ```python
 import polars as pl
@@ -598,9 +670,17 @@ from tqdm import tqdm
 
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
 REPO_ID = "OpenShape/openshape-training-data"
-DF_PATH = '/path/to/your/image/points.csv
+DF_PATHS = ['/path/to/your/points.csv','/path/to/your/points.csv','/path/to/your/points.csv']
 
-df = pl.read_csv(DF_PATH)
+dfs = []
+for df_path in DF_PATHS:
+    df = pl.read_csv(DF_PATH)
+    df = df.select(['file_id','save_folder'])
+    dfs.append(df)
+
+total_df = pl.concat(dfs).unique()
+
+    
 ROOT_DATASETS = {
     '3D-FUTURE': '3D-FUTURE.tar.gz',
     'ABO': 'ABO.tar.gz',
@@ -611,7 +691,7 @@ def process_tar(tar_filename, dataset_df):
     if len(dataset_df) == 0:
         return
 
-    print(f"\nProcessing {dataset_name} ({len(dataset_df)} files needed)...")
+    print(f"\nProcessing {dataset_name}...")
 
 
     file_id_to_folder = {row['file_id']: row['save_folder']
@@ -642,7 +722,7 @@ for dataset_name, tar_filename in ROOT_DATASETS.items():
 
 # Process Objaverse (000-000.tar.gz to 000-159.tar.gz)
 
-print(f"\nProcessing Objaverse ({len(df)} files needed)...")
+print(f"\nProcessing Objaverse...")
 file_id_to_folder = {row['file_id']: row['save_folder']
                         for row in df.iter_rows(named=True)}
 found = 0
