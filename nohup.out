@@ -1,0 +1,12 @@
+Using CPython 3.12.11
+Creating virtual environment at: .venv
+Downloading pyarrow (40.8MiB)
+Downloading pydantic-core (2.0MiB)
+Downloading numpy (15.8MiB)
+Downloading opencv-python-headless (51.5MiB)
+ Downloading pydantic-core
+ Downloading opencv-python-headless
+ Downloading pyarrow
+ Downloading numpy
+Installed 48 packages in 63ms
+/home/ubuntu/projects/felix/E-MM1/.venv/bin/python: can't open file '/home/ubuntu/projects/felix/E-MM1/change_metadata.py': [Errno 2] No such file or directory
