@@ -246,7 +246,7 @@ encord_phase_2_dataset/
 
 The below script loads up the triplets from `/ "encord_phase_2_dataset" / "triplets.csv"`. We then will further filter the triplets CSV to include only pairs from data from the modalities that we care about. We further optionally include the caption pairing the two base items
 
-> 💡 Change the `MODALITIES` variable to specify which modality pairs you want to extract, e.g., `['points','audio','video']` will extract all points-audio and points-video pairs that exist in the dataset. Note that only modality pairs present in the dataset will be extracted. For example, as there are no audio-video pairs in the dataset, that combination will be skipped.\*\*
+> 💡 Change the `MODALITIES` variable to specify which modality pairs you want to extract, e.g., `['points','audio','video']` will extract all points-audio and points-video pairs that exist in the dataset. Note that only modality pairs present in the dataset will be extracted. For example, as there are no audio-video pairs in the dataset, that combination will be skipped.
 
 Before running the example, make sure you have pulled the csv files from `lfs`:
 

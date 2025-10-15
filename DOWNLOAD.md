@@ -22,8 +22,11 @@ ROOT_FOLDER/
 ```
 
 `e-mm1_100m_only`: Contains files exclusive to `E-MM1:100M`
+
 `e-mm1_1m_only`: Contains files exclusive to `E-MM1:1M`
+
 `shared`: Contains files that appear in both `E-MM1:100M` and `E-MM1:1M`
+
 The download scripts read the save_folder and file_name columns from each info dataframe to place files in the correct locations automatically. For each code chunk, you need to set the ROOT_DATA_PATH and the path to your chosen infos dataframe that you want to extract data from.
 
 ## Infos DataFrame Schema
@@ -651,13 +654,13 @@ print(f"\nComplete! Moved: {moved}, Errors: {errors}")
 
 # Points
 
-all point clouds are available to download from OpenShape on huggingface: https://huggingface.co/datasets/OpenShape/openshape-training-data/tree/main
+All point clouds are available to download from OpenShape on huggingface: https://huggingface.co/datasets/OpenShape/openshape-training-data/tree/main
 
-As this is a large dataset, we recommend extracting all needed point clouds for E-MM1_100m,E-MM1_1M and EShot at the same time.
+As this is a large dataset, we recommend extracting all needed point clouds for `E-MM1_100m`,`E-MM1_1M` and `EShot` at the same time.
 
 Files can be identified using the file_id column in infos/points.csv
 
-T
+
 
 ```python
 import polars as pl
@@ -754,4 +757,4 @@ print("\nAll datasets processed!")
 
 ## Captions
 
-All captions are available in the 'caption' column in infos/text.csv
+All captions are available in the `caption` column in `infos/text.csv`
