@@ -1,5 +1,20 @@
 # Data Download Guide
 
+> [!IMPORTANT]
+> Unless you are okay with downloading all ~13GB of data, make sure to clone the repository like this:
+>
+> ```shell
+> GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/encord-team/E-MM1.git
+> ```
+>
+> This will clone just the pointers to the larger dataset files.
+> Use this command to get all CSVs necessary for this download page.
+>
+> ```shell
+> git lfs pull --include="datasets/*/infos.csv"
+> git lfs pull --include="datasets/eshot/*.csv"
+> ```
+
 This guide provides code to download all raw data files from the various source datasets used in this project. The download scripts utilize the metadata in the infos dataframes
 (located at `./datasets/e-mm1_100m/infos/` and `./datasets/e-mm1_1m/infos/` and `./datasets/eshot`) to automatically organize files into the appropriate directory structure.
 Repository Structure
@@ -39,13 +54,13 @@ All dataframes have these columns:
 
 ### Universal Columns (All Modalities)
 
-| Column                 | Type    | Description                                                                                             |
-| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------- |
-| `encord_{modality}_id` | Integer | Identifier unique to each (dataset, modality) pair (e.g., `encord_video_id` in `E-MM1_1M`) |
-| `source_dataset`       | String  | Name of the original dataset from which this data item was sourced (e.g., "Valor", "COCO", "AudioSet")  |
-| `dataset_license`      | String  | License type of the source dataset (e.g., "MIT", "CC-BY", "Apache-2.0")                                 |
-| `file_name`            | String  | Name of the file to be saved locally (e.g., `4Df6eeR64Ow_14.mp4`)                                       |
-| `save_folder`          | String  | Target directory for organizing files. One of: `e-mm1_100m_only`, `e-mm1_1m_only`, or `shared`               |
+| Column                 | Type    | Description                                                                                            |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `encord_{modality}_id` | Integer | Identifier unique to each (dataset, modality) pair (e.g., `encord_video_id` in `E-MM1_1M`)             |
+| `source_dataset`       | String  | Name of the original dataset from which this data item was sourced (e.g., "Valor", "COCO", "AudioSet") |
+| `dataset_license`      | String  | License type of the source dataset (e.g., "MIT", "CC-BY", "Apache-2.0")                                |
+| `file_name`            | String  | Name of the file to be saved locally (e.g., `4Df6eeR64Ow_14.mp4`)                                      |
+| `save_folder`          | String  | Target directory for organizing files. One of: `e-mm1_100m_only`, `e-mm1_1m_only`, or `shared`         |
 
 ### Note on audio:
 
@@ -64,7 +79,7 @@ uv sync
 
 ## YouTube-based Datasets
 
-### YouTube - based Datasets for E-MM1_1M and E-MM1_100M 
+### YouTube - based Datasets for E-MM1_1M and E-MM1_100M
 
 Download videos or audio from YouTube using yt-dlp with time-based segmentation:
 Note: We include this as a representative example of how to download videos but for bulk-downloading **All** videos, we would encourage people to look elsewhere for more robust `yt-dlp` based solutions
@@ -87,11 +102,11 @@ logger = logging.getLogger(__name__)
 
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
 # Change this to the {audio,video} df path for e-mm1_100m or e-mm1_1m
-DF_PATH = 'path/to/your/info/df.csv'  
+DF_PATH = 'path/to/your/info/df.csv'
 
 # Load and filter out datasets with no start/end times provided
 df = pl.read_csv(DF_PATH)
-df = df.filter(pl.col('source_dataset') != 'VidGen-1M') 
+df = df.filter(pl.col('source_dataset') != 'VidGen-1M')
 
 # Download videos/audio
 for row in df.iter_rows(named=True):
@@ -152,14 +167,14 @@ logger = logging.getLogger(__name__)
 
 
 ROOT_DATA_PATH = os.getenv('ROOT_DATA_PATH')
-DF_PATH = 'path/to/eshot/audio/info/df.csv' 
+DF_PATH = 'path/to/eshot/audio/info/df.csv'
 
 
 df = pl.read_csv(DF_PATH)
 
 
 for row in df.iter_rows(named=True):
- 
+
     output_dir = Path(ROOT_DATA_PATH) / row['save_folder'] / 'audio'
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / row['file_name']
@@ -660,8 +675,6 @@ As this is a large dataset, we recommend extracting all needed point clouds for 
 
 Files can be identified using the file_id column in infos/points.csv
 
-
-
 ```python
 import polars as pl
 from pathlib import Path
@@ -683,7 +696,7 @@ for df_path in DF_PATHS:
 
 total_df = pl.concat(dfs).unique()
 
-    
+
 ROOT_DATASETS = {
     '3D-FUTURE': '3D-FUTURE.tar.gz',
     'ABO': 'ABO.tar.gz',

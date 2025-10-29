@@ -26,6 +26,15 @@ With the E-MM1 dataset, we contribute >100M groups of data (`E-MM1:100M`) from f
 
 ## Working with `E-MM1`
 
+> [!IMPORTANT]
+> Unless you are okay with downloading all ~13GB of data, make sure to clone the repository like this:
+>
+> ```shell
+> GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/encord-team/E-MM1.git
+> ```
+>
+> This will clone just the pointers to the larger dataset files.
+
 We provide two dataset splits:
 
 - **`E-MM1:100M` (automated)** — very large, built via nearest-neighbour retrieval.
@@ -65,8 +74,8 @@ e-mm1_100m/
 > As an example, if you just want the nearest neighbour for each caption, run the following commands:
 >
 > ```
-> git lfs pull --include="e-mm1_100m/infos/*.csv"
-> git lfs pull --include="e-mm1_100m/nn_1/*.csv"
+> git lfs pull --include="datasets/e-mm1_100m/infos/*.csv"
+> git lfs pull --include="datasets/e-mm1_100m/nn_1/*.csv"
 > ```
 
 ### How `E-MM1:100M` groups were formed
@@ -76,13 +85,13 @@ Each `nn_{k}/data_groups.csv` contains, for every caption, the IDs of the _k-th_
 
 ### `E-MM1:100M` column schema
 
-| **Column**             | **Type** | **Description**                                                          |
-| :--------------------- | :------- | :----------------------------------------------------------------------- |
+| **Column**             | **Type** | **Description**                                                                                       |
+| :--------------------- | :------- | :---------------------------------------------------------------------------------------------------- |
 | `encord_{modality}_id` | Integer  | Unique ID for a specific file in that (dataset,modality) combination (e.g., `image` and `E-MM1:100M`) |
-| `save_folder`          | String   | Relative folder under your chosen root where the asset is stored.        |
-| `file_name`            | String   | Filename of the asset                                                    |
-| `encord_text_id`       | Integer  | ID of the caption row in `infos/text.csv`                                |
-| `caption`              | String   | The caption text in `infos/text.csv`                                     |
+| `save_folder`          | String   | Relative folder under your chosen root where the asset is stored.                                     |
+| `file_name`            | String   | Filename of the asset                                                                                 |
+| `encord_text_id`       | Integer  | ID of the caption row in `infos/text.csv`                                                             |
+| `caption`              | String   | The caption text in `infos/text.csv`                                                                  |
 
 ### `E-MM1:100M` Example
 
@@ -92,8 +101,8 @@ First, download the raw underlying data by following the instructions on the [Do
 Second, use `git lfs` to fetch the csv files needed.
 
 ```
-git lfs pull --include="e-mm1_100m/infos/*.csv"
-git lfs pull --include="e-mm1_100m/nn_1/*.csv"
+git lfs pull --include="datasets/e-mm1_100m/infos/*.csv"
+git lfs pull --include="datasets/e-mm1_100m/nn_1/*.csv"
 ```
 
 Then, follow the example below to obtain the relevant data.
@@ -172,6 +181,7 @@ nn1_groups = nn1_groups.join(
 print(nn1_groups.columns) # ['encord_text_id', 'encord_video_id', 'encord_audio_id', 'encord_image_id', 'encord_points_id', 'nn_index', 'image_file_path', 'audio_file_path', 'video_file_path', 'points_file_path']
 print(nn1_groups)
 ```
+
 shape: (6_706_765, 10)
 | encord_text_id | encord_video_id | encord_audio_id | encord_image_id | ... | image_file_path | audio_file_path | video_file_path | points_file_path |
 |----------------|-----------------|-----------------|-----------------|-----|-----------------|-----------------|-----------------|------------------|
@@ -187,7 +197,6 @@ shape: (6_706_765, 10)
 | 8134019 | 3253932 | 455813 | 1314353 | ... | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… |
 | 8134020 | 2494438 | 2025372 | 2740332 | ... | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… |
 
-
 ## Working with the `E-MM1:1M` split
 
 The E-MM1 annotations were designed to build pairings between 2 non-text modalities. To that end, we worked with captioned base modality examples as discussed in the [technical report][paper].
@@ -202,13 +211,12 @@ Describes the annotation pairings used to build multi-modal pairings. Includes h
 #### Example:
 
 | encord_text_id | paired_modality | annotated_modality | encord_paired_id | encord_annotated_id | annotation |
-|----------------|------------|--------------|----------------|----------------------|------------|
-| 124188 | audio | image | 36699 | 80177 | 2 |
-
+| -------------- | --------------- | ------------------ | ---------------- | ------------------- | ---------- |
+| 124188         | audio           | image              | 36699            | 80177               | 2          |
 
 - **`annotation_mapping.csv`** maps the `annotation` codes used in `triplets.csv` to human-readable labels
 
- (`1` → `Good Match`,`2` → `Partial Match`,`3` → `Bad Match`)
+(`1` → `Good Match`,`2` → `Partial Match`,`3` → `Bad Match`)
 
 ### `E-MM1:1M` file layout
 
@@ -229,14 +237,14 @@ e-mm1_1m/
 
 `triplets.csv` columns:
 
-| **Column**               | **Type** | **Description**                                                                          |
-| :----------------------- | :------- | :--------------------------------------------------------------------------------------- |
-| `encord_text_id`         | Integer  | ID of the caption (joins to `infos/text.csv`)                                            |
-| `paired_modality`             | String   | Modality of the pair associated to the caption (e.g: for a COCO caption, `paired_modality` would be image.)                           |
-| `annotated_modality`             | String   | Modality of the annotated candidate (e.g., `image`, `audio`, `video`, `points`, != `paired_modality` )                           |
-| `encord_paired_id` | Integer  | Encord ID for paired item
-| `encord_annotated_id` | Integer  | Encord ID for annotated item
-| `annotation`             | Integer  | categorical code for the label |
+| **Column**            | **Type** | **Description**                                                                                             |
+| :-------------------- | :------- | :---------------------------------------------------------------------------------------------------------- |
+| `encord_text_id`      | Integer  | ID of the caption (joins to `infos/text.csv`)                                                               |
+| `paired_modality`     | String   | Modality of the pair associated to the caption (e.g: for a COCO caption, `paired_modality` would be image.) |
+| `annotated_modality`  | String   | Modality of the annotated candidate (e.g., `image`, `audio`, `video`, `points`, != `paired_modality` )      |
+| `encord_paired_id`    | Integer  | Encord ID for paired item                                                                                   |
+| `encord_annotated_id` | Integer  | Encord ID for annotated item                                                                                |
+| `annotation`          | Integer  | categorical code for the label                                                                              |
 
 > The `infos/*.csv` files share the same conventions as for `E-MM1:100M`: each contains
 > `encord_{modality}_id`, `save_folder`, and `file_name`. Follow [the download instructions][download] to build file paths as:  
@@ -341,22 +349,22 @@ output_triplets = output_triplets.join(text_info, on="encord_text_id", how="left
 print(output_triplets.columns) # ['encord_text_id', 'paired_modality', 'annotated_modality', 'encord_paired_id', 'encord_annotated_id', 'annotation', 'modality_1_file_path', 'modality_2_file_path', 'caption']
 print(output_triplets)
 ```
+
 shape: (144_465, 9)
 
-
-| encord_text_id | paired_modality | annotated_modality | encord_paired_id | ... | annotation | paired_modality_file_path | annotated_modality_file_path | caption |
-|----------------|-----------------|--------------------|--------------------|-----|------------|----------------------|----------------------|---------|
-| 296025 | points | audio | 158492 | ... | 3 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Burping then clicking and gurg… |
-| 296025 | points | audio | 158492 | ... | 3 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Burping then clicking and gurg… |
-| 302072 | points | audio | 5089 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Motorcycle engine starting and… |
-| 309634 | points | audio | 156433 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Water is splashing, the wind i… |
-| 309634 | points | audio | 156433 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Water is splashing, the wind i… |
-| ... | ... | ... | ... | ... | ... | ... | ... | ... |
-| 308950 | points | audio | 11735 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Vehicle running lightly with m… |
-| 282301 | points | audio | 79560 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | A dog is whimpering, followed … |
-| 282301 | points | audio | 79560 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | A dog is whimpering, followed … |
-| 301969 | points | audio | 36034 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Motor revving with a squeaky b… |
-| 301969 | points | audio | 36034 | ... | 1 | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Motor revving with a squeaky b… |
+| encord_text_id | paired_modality | annotated_modality | encord_paired_id | ... | annotation | paired_modality_file_path       | annotated_modality_file_path    | caption                         |
+| -------------- | --------------- | ------------------ | ---------------- | --- | ---------- | ------------------------------- | ------------------------------- | ------------------------------- |
+| 296025         | points          | audio              | 158492           | ... | 3          | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Burping then clicking and gurg… |
+| 296025         | points          | audio              | 158492           | ... | 3          | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Burping then clicking and gurg… |
+| 302072         | points          | audio              | 5089             | ... | 1          | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Motorcycle engine starting and… |
+| 309634         | points          | audio              | 156433           | ... | 1          | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Water is splashing, the wind i… |
+| 309634         | points          | audio              | 156433           | ... | 1          | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Water is splashing, the wind i… |
+| ...            | ...             | ...                | ...              | ... | ...        | ...                             | ...                             | ...                             |
+| 308950         | points          | audio              | 11735            | ... | 1          | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Vehicle running lightly with m… |
+| 282301         | points          | audio              | 79560            | ... | 1          | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | A dog is whimpering, followed … |
+| 282301         | points          | audio              | 79560            | ... | 1          | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | A dog is whimpering, followed … |
+| 301969         | points          | audio              | 36034            | ... | 1          | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Motor revving with a squeaky b… |
+| 301969         | points          | audio              | 36034            | ... | 1          | /Users/encord/Documents/E-MM1/… | /Users/encord/Documents/E-MM1/… | Motor revving with a squeaky b… |
 
 ## `EShot`: A Zero-Shot Benchmark for Audio ↔ Point Cloud
 
@@ -393,28 +401,27 @@ Directory containing all point cloud files. Files are referenced by their `eshot
 
 Complete metadata for each audio sample.
 
-| **Columns**      | **Type** | **Description**                             |
-| :--------------- | :------- | :------------------------------------------ |
-| `eshot_audio_id` | Integer  | Unique identifier for the audio sample      |
-| `youtube_id`     | String   | Source YouTube video ID                     |
-| `start_time`     | Integer  | Start timestamp of the audio clip (seconds) |
-| `end_time`       | Integer  | End timestamp of the audio clip (seconds)   |
-| `file_name`      | String   | Filename of the asset                       |
-| `save_folder`    | String   | Relative folder under your chosen root where the asset is | 
+| **Columns**      | **Type** | **Description**                                           |
+| :--------------- | :------- | :-------------------------------------------------------- |
+| `eshot_audio_id` | Integer  | Unique identifier for the audio sample                    |
+| `youtube_id`     | String   | Source YouTube video ID                                   |
+| `start_time`     | Integer  | Start timestamp of the audio clip (seconds)               |
+| `end_time`       | Integer  | End timestamp of the audio clip (seconds)                 |
+| `file_name`      | String   | Filename of the asset                                     |
+| `save_folder`    | String   | Relative folder under your chosen root where the asset is |
+
 #### `eshot_points_info.csv`
 
 Complete metadata for each point cloud sample.
 
 **Schema**:
 
-| **Columns**      | **Type** | **Description**                              |
-| :--------------- | :------- | :------------------------------------------- |
-| `eshot_point_id` | Integer  | Unique identifier for the point cloud sample |
-| `file_id`      | String   | Source 3D object identifier (Objaverse ID)   |
-| `file_name`      | String   | Filename of the asset                       |
-| `save_folder`    | String   | Relative folder under your chosen root where the asset is | 
-
-
+| **Columns**      | **Type** | **Description**                                           |
+| :--------------- | :------- | :-------------------------------------------------------- |
+| `eshot_point_id` | Integer  | Unique identifier for the point cloud sample              |
+| `file_id`        | String   | Source 3D object identifier (Objaverse ID)                |
+| `file_name`      | String   | Filename of the asset                                     |
+| `save_folder`    | String   | Relative folder under your chosen root where the asset is |
 
 #### `category_to_audio_ids.json`
 
@@ -576,6 +583,7 @@ for i, category in enumerate(sorted_categories):
             f"  Top-{k} Accuracy: {accuracy:.4f} ({int(correct.sum())}/{len(correct)} correct)"
         )
 ```
+
 Prints the class by class zero shot performance.
 
 ```
@@ -609,7 +617,6 @@ Category: anatomical_heart
 
 - [ ] We will publish a model with weights that was trained on the dataset. The model can embed all five modalities into a unified embedding space.
 - [ ] We will publish pre-computed embeddings used to build the dataset.
-
 
 Please do reach out to the team at ml@encord.com for any enquiries or to show off any cool applications of the dataset!
 
