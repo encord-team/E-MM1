@@ -45,7 +45,7 @@ For each of ~6.7M captions, we retrieved the top-16 nearest neighbours across al
 ### `E-MM1:100M` file layout
 
 ```
-encord_phase_1_dataset/
+e-mm1_100m/
 ├─ infos/
 │ ├─ video.csv
 │ ├─ audio.csv
@@ -111,22 +111,22 @@ SEP = str(Path("/"))
 
 # Load in the groupings and the source files for each modality
 nn1_groups = pl.read_csv(
-    Path(ROOT_DATA_PATH) / "encord_phase_1_dataset" / "nn_1" / "data_groups.csv"
+    Path(ROOT_DATA_PATH) / "e-mm1_100m" / "nn_1" / "data_groups.csv"
 )
 image_info = pl.read_csv(
-    Path(ROOT_DATA_PATH) / "encord_phase_1_dataset" / "infos" / "image.csv"
+    Path(ROOT_DATA_PATH) / "e-mm1_100m" / "infos" / "image.csv"
 )
 audio_info = pl.read_csv(
-    Path(ROOT_DATA_PATH) / "encord_phase_1_dataset" / "infos" / "audio.csv"
+    Path(ROOT_DATA_PATH) / "e-mm1_100m" / "infos" / "audio.csv"
 )
 video_info = pl.read_csv(
-    Path(ROOT_DATA_PATH) / "encord_phase_1_dataset" / "infos" / "video.csv"
+    Path(ROOT_DATA_PATH) / "e-mm1_100m" / "infos" / "video.csv"
 )
 points_info = pl.read_csv(
-    Path(ROOT_DATA_PATH) / "encord_phase_1_dataset" / "infos" / "points.csv"
+    Path(ROOT_DATA_PATH) / "e-mm1_100m" / "infos" / "points.csv"
 )
 text_info = pl.read_csv(
-    Path(ROOT_DATA_PATH) / "encord_phase_1_dataset" / "infos" / "text.csv"
+    Path(ROOT_DATA_PATH) / "e-mm1_100m" / "infos" / "text.csv"
 )
 
 modality_to_info = {
@@ -213,7 +213,7 @@ Describes the annotation pairings used to build multi-modal pairings. Includes h
 ### `E-MM1:1M` file layout
 
 ```
-encord_phase_2_dataset/
+e-mm1_1m/
 ├─ infos/
 │ ├─ video.csv
 │ ├─ audio.csv
@@ -244,7 +244,7 @@ encord_phase_2_dataset/
 
 ### Example: Extracting all Point-Cloud ↔ Audio groups from `E-MM1:1M`
 
-The below script loads up the triplets from `/ "encord_phase_2_dataset" / "triplets.csv"`. We then will further filter the triplets CSV to include only pairs from data from the modalities that we care about. We further optionally include the caption pairing the two base items
+The below script loads up the triplets from `/ "e-mm1_1m" / "triplets.csv"`. We then will further filter the triplets CSV to include only pairs from data from the modalities that we care about. We further optionally include the caption pairing the two base items
 
 > 💡 Change the `MODALITIES` variable to specify which modality pairs you want to extract, e.g., `['points','audio','video']` will extract all points-audio and points-video pairs that exist in the dataset. Note that only modality pairs present in the dataset will be extracted. For example, as there are no audio-video pairs in the dataset, that combination will be skipped.
 
@@ -267,14 +267,14 @@ MODALITIES = ["points", "audio"]
 SEP = str(Path("/"))
 
 triplets_df = pl.read_csv(
-    Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "triplets.csv"
+    Path(ROOT_DATA_PATH) / "e-mm1_1m" / "triplets.csv"
 )
 
 modality_to_path = {
-    "image": Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "image.csv",
-    "audio": Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "audio.csv",
-    "video": Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "video.csv",
-    "points": Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "points.csv",
+    "image": Path(ROOT_DATA_PATH) / "e-mm1_1m" / "infos" / "image.csv",
+    "audio": Path(ROOT_DATA_PATH) / "e-mm1_1m" / "infos" / "audio.csv",
+    "video": Path(ROOT_DATA_PATH) / "e-mm1_1m" / "infos" / "video.csv",
+    "points": Path(ROOT_DATA_PATH) / "e-mm1_1m" / "infos" / "points.csv",
 }
 
 modality_to_info = {}
@@ -334,7 +334,7 @@ output_triplets = pl.concat(processed_triplets)
 
 # optional : get captions
 text_info = pl.read_csv(
-    Path(ROOT_DATA_PATH) / "encord_phase_2_dataset" / "infos" / "text.csv"
+    Path(ROOT_DATA_PATH) / "e-mm1_1m" / "infos" / "text.csv"
 )
 text_info = text_info.select(["encord_text_id", "caption"])
 output_triplets = output_triplets.join(text_info, on="encord_text_id", how="left")
